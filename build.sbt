@@ -15,6 +15,12 @@ scalaVersion := "2.12.4"
 name := "fijnstof"
 organization := "nl.kransen"
 version := "1.0"
+maintainer := "Jeroen Kransen <jeroen@kransen.nl>"
+
+packageSummary := "SDS021 sensor reader for Domoticz"
+
+packageDescription := """This software reads sensors and pushes readings to
+  external services. Supported sensors: SDS021, supported services: Domoticz."""
 
 // Note, it's not required for you to define these three settings. These are
 // mostly only necessary if you intend to publish your library's binaries on a
@@ -80,4 +86,9 @@ libraryDependencies += "com.typesafe" % "config" % "1.3.2"
 
 // To learn more about multi-project builds, head over to the official sbt
 // documentation at http://www.scala-sbt.org/documentation.html
+
+enablePlugins(JavaAppPackaging)
+enablePlugins(JavaServerAppPackaging)
+
+// val settings = mapGenericFilesToLinux
 

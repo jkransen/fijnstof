@@ -13,7 +13,7 @@ object Main extends App {
   val host = config.getString("domoticz.host")
   val port = config.getString("domoticz.port")
   val pm25Idx = config.getString("domoticz.pm25Idx")
-  val pm10Idx = config.getString("domoticz.pm25Idx")
+  val pm10Idx = config.getString("domoticz.pm10Idx")
   val uartDevice = config.getString("uart.device")
 
   var count = 0
