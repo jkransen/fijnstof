@@ -13,7 +13,9 @@ libraryDependencies ++= Seq(
   "com.github.purejavacomm" % "purejavacomm"  % "1.0.1.RELEASE",
   "org.slf4j"               % "slf4j-log4j12" % "1.7.25",
   "com.typesafe"            % "config"        % "1.3.2",
-  "org.scalaj"             %% "scalaj-http"   % "2.4.0")
+  "com.typesafe.akka"      %% "akka-http"     % "10.1.3",
+  "com.typesafe.akka"      %% "akka-stream"   % "2.5.13"
+)
 
 // enablePlugins(JavaAppPackaging)
 
