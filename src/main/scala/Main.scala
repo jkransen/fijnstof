@@ -6,6 +6,8 @@ import scala.reflect.io.File
 
 object Main extends App {
 
+
+
   val log = LoggerFactory.getLogger("Main")
   val cpuinfo = File("/proc/cpuinfo").slurp()
   val serialRegex = "Serial\\s*\\:\\s*0*(\\d+)".r
@@ -41,7 +43,7 @@ object Main extends App {
     println(response1)
     val response2 = io.Source.fromURL(s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${report.pm10 / 10}.${report.pm10 % 10}").mkString
     println(response2)
-    // sendLuftdaten(report)
+    sendLuftdaten(report)
   }
 
   def sendLuftdaten(report: Report): Unit = {

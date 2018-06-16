@@ -25,8 +25,8 @@ enablePlugins(SystemdPlugin)
 mappings in Universal += {
   // we are using the reference.conf as default application.conf
   // the user can override settings here
-  // val conf = (resourceDirectory in Compile).value / "reference.conf"
-  val conf = (resourceDirectory in Compile).value / "application.conf"
+  val conf = (resourceDirectory in Compile).value / "reference.conf"
+  // val conf = (resourceDirectory in Compile).value / "application.conf"
   conf -> "conf/application.conf"
 }
 
