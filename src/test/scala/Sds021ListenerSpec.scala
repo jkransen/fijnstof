@@ -10,7 +10,7 @@ class Sds021ListenerSpec extends FlatSpec with MockFactory {
 
   "Valid payload with correct checksum" should "send precisely one Report" in {
 
-    val oneReading = "aa c0 01 02 03 04 05 06 15 ab"
+    val validPayload = "aa c0 01 02 03 04 05 06 15 ab"
 
     val reading25 = 2 * 256 + 1
     val reading10 = 4 * 256 + 3
@@ -20,7 +20,9 @@ class Sds021ListenerSpec extends FlatSpec with MockFactory {
 
     mockRecipient expects expectedReport once
 
-    Sds021Listener.listen(oneReading, mockRecipient)
+    Sds021Listener.listen(validPayload, mockRecipient)
+
+    // TODO end test
   }
 
   implicit def hexToInputStream(str: String): InputStream = new ByteArrayInputStream(DatatypeConverter.parseHexBinary(str.replaceAll("\\s", "")))
