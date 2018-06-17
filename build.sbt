@@ -5,19 +5,22 @@ organization := "nl.kransen"
 version := "1.0"
 maintainer := "Jeroen Kransen <jeroen@kransen.nl>"
 packageSummary := "SDS021 sensor reader for Domoticz"
-packageDescription := """This software reads sensors and pushes readings to
-  external services. Supported sensors: SDS021, supported services: Domoticz."""
+packageDescription := """This software reads sensors and pushes readings to external services.
+  Supported sensors: SDS011, SDS021.
+  Supported services: Domoticz, Luftdaten."""
 
 libraryDependencies ++= Seq(
-  "org.typelevel"          %% "cats-core"     % "1.0.1",
-  "com.github.purejavacomm" % "purejavacomm"  % "1.0.1.RELEASE",
-  "org.slf4j"               % "slf4j-log4j12" % "1.7.25",
-  "com.typesafe"            % "config"        % "1.3.2",
-  "com.typesafe.akka"      %% "akka-http"     % "10.1.3",
-  "com.typesafe.akka"      %% "akka-stream"   % "2.5.13"
-)
+  "org.typelevel"          %% "cats-core"         % "1.0.1",
+  "com.github.purejavacomm" % "purejavacomm"      % "1.0.1.RELEASE",
+  "org.slf4j"               % "slf4j-log4j12"     % "1.7.25",
+  "com.typesafe"            % "config"            % "1.3.2",
+  "com.typesafe.akka"      %% "akka-http"         % "10.1.3",
+  "com.typesafe.akka"      %% "akka-stream"       % "2.5.13",
 
-// enablePlugins(JavaAppPackaging)
+  "com.typesafe.akka"      %% "akka-http-testkit" % "10.1.1"      % Test,
+  "org.scalatest"          %% "scalatest"         % "3.0.5"       % Test,
+  "org.scalamock"          %% "scalamock"         % "4.1.0"       % Test
+)
 
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(SystemdPlugin)

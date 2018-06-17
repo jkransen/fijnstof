@@ -26,6 +26,8 @@ The output will be a file:
 
 This package is targeted at the Raspberry Pi running Raspbian, but the software should run on any Linux with a sensor on a serial device. 
 
+### Raspberry Pi
+
 Following is a step by step guide to install a Raspberry Pi with fijnstof running:
 
 - Download the latest Raspbian, and extract it to get the .img
@@ -43,6 +45,7 @@ Following is a step by step guide to install a Raspberry Pi with fijnstof runnin
     
 Check your router for the assigned IP address.
 
+### Debian package
     
 From your host computer, copy the Debian package:
 
@@ -62,7 +65,7 @@ Configuration is in:
     
 Set the serial device here, the host/port of the target Domoticz installation.
 
-## Domoticz
+### Domoticz
 
 In Domoticz, create new hardware -> Dummy
 
@@ -70,7 +73,7 @@ From Dummy hardware, create 2 virtual sensors. Look up the assigned IDX values, 
 
 You can add the new devices to the floor plan, and drag them to the correct phyisical place in the right room.
 
-## Luftdaten
+### Luftdaten
 
 If the sensor is outside, you may consider connecting to a Citizen Science 
 project on [luftdaten.info](luftdaten.info). Once you retrieved the ID of your sensor from the logging (eg fijnstof-12345), use that to register at the bottom of their DIY page: [https://luftdaten.info/en/construction-manual/](https://luftdaten.info/en/construction-manual/). After some time (days), you  will get a confirmation, and you will see the measurements on the map on your specified location: [maps.luftdaten.info](maps.luftdaten.info), but also anyone else interested in particulate rates in their area or anywhere else.

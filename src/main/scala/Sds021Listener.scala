@@ -4,7 +4,10 @@ import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
-case class Report(id: Int, pm25: Int, pm10: Int)
+case class Report(id: Int, pm25: Int, pm10: Int) {
+  val pm10str = s"${pm10 / 10}.${pm10 % 10}"
+  val pm25str = s"${pm25 / 10}.${pm25 % 10}"
+}
 
 object Sds021Listener {
 
