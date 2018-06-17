@@ -2,10 +2,11 @@ import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 import scala.reflect.io.File
@@ -67,13 +68,30 @@ object Main extends App {
 
   def sendLuftdaten(report: Report): Unit = {
     val postUrl = "https://api.luftdaten.info/v1/push-sensor-data/"
+    val id = "fijnstof-" + report.id // id.getOrElse("fijnstof-" + report.id)))
+    log.debug(s"Luftdaten ID: $id")
+
+    val json = s"""
+         |{
+         |    "software_version": "fijnstof 1.0",
+         |    "sensordatavalues": [
+         |        {"value_type": "P1", "value": "${report.pm10 / 10}.${report.pm10 % 10}"},
+         |        {"value_type": "P2", "value": "${report.pm25 / 10}.${report.pm25 % 10}"}
+         |    ]
+         |}
+       """.stripMargin
+
+    log.debug(s"JSON: $json")
 
     val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = postUrl, method = HttpMethods.POST)
-      .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id.getOrElse("fijnstof-" + report.id)))
-      .withEntity(entity = FormData(Map("P1" -> report.pm10.toString, "P2" -> report.pm25.toString)).toEntity(HttpCharsets.`UTF-8`)))
+      .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id))
+      .withEntity(entity = HttpEntity(ContentTypes.`application/json`, json)))
 
     responseFuture.onComplete {
-      case Success(response) => log.info(s"Luftdaten succeeded: ${response.entity}")
+      case Success(response) => {
+        response.entity.toStrict(FiniteDuration(1, "second")).map(entity =>
+            log.info(s"Luftdaten succeeded: $entity"))
+      }
       case Failure(e) => log.error("Luftdaten failed", e)
     }
   }
