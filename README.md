@@ -10,6 +10,7 @@ Currently supported sensors:
 Currently supported external services:
 
 - Domoticz
+- Luftdaten.info
 
 ## Packaging
 
@@ -61,8 +62,17 @@ Configuration is in:
     
 Set the serial device here, the host/port of the target Domoticz installation.
 
+## Domoticz
+
 In Domoticz, create new hardware -> Dummy
 
 From Dummy hardware, create 2 virtual sensors. Look up the assigned IDX values, and set them in the above configuration file.
 
 You can add the new devices to the floor plan, and drag them to the correct phyisical place in the right room.
+
+## Luftdaten
+
+If the sensor is outside, you may consider connecting to a Citizen Science 
+project on [luftdaten.info](luftdaten.info). Once you retrieved the ID of your sensor from the logging (eg fijnstof-12345), use that to register at the bottom of their DIY page: [https://luftdaten.info/en/construction-manual/](https://luftdaten.info/en/construction-manual/). After some time (days), you  will get a confirmation, and you will see the measurements on the map on your specified location: [maps.luftdaten.info](maps.luftdaten.info), but also anyone else interested in particulate rates in their area or anywhere else.
+
+
