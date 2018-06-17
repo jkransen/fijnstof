@@ -74,8 +74,9 @@ Set the serial device here, the host/port of the target Domoticz installation.
 
 In Domoticz -> Settings -> Hardware, add new Dummy hardware
 
-On the Dummy hardware, create 2 virtual sensors, `PM2.5` and `PM10`. Enter (copy/paste) `µg/m³` for axis label. 
-Look up the assigned IDX values under Devices (order by IDX descending), and set them in the above configuration file.
+On the Dummy hardware, create 2 virtual sensors, `PM2.5` and `PM10`. 
+Sensor type: _Custom sensor_. Enter (copy/paste) `µg/m³` for axis label. 
+Look up the assigned _IDX_ values under _Devices_ (order by IDX descending), and set them in the above configuration file.
 
 You can add the new devices to the _floor plan_ if you have one, and drag them to the correct physical place in the right room.
 
