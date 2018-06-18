@@ -46,7 +46,7 @@ object Main extends App {
   var count = 0
 
   def handleReport(report: Report): Unit = {
-    if (count == 0) {
+    if (count <= 0) {
       try {
         log.debug("Report: " + report)
         val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${report.pm25str}"
@@ -62,10 +62,10 @@ object Main extends App {
           case Failure(e) => log.error("Domoticz PM10 failed", e)
         }
         sendLuftdaten(report)
+        count = 150
       } catch {
         case e: Exception => log.error("Could not update sensors", e)
       }
-      count = 30
     }
     count = count - 1
   }

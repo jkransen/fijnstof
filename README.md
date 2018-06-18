@@ -5,7 +5,7 @@ This app periodically reads physically attached sensors (Serial/UART) and distri
 Currently supported sensors: 
 
 - SDS011
-- SDS021
+- SDS021 (Deprecated! For indoor use only)
 
 Currently supported external services:
 
