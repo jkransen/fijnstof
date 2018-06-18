@@ -14,7 +14,7 @@ import scala.reflect.io.File
 
 object Main extends App {
 
-  val log = LoggerFactory.getLogger("Main")
+  private val log = LoggerFactory.getLogger("Main")
 
   val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
   val id = for {
@@ -41,7 +41,7 @@ object Main extends App {
 
   println(s"Machine ID: $id")
 
-  // Serial.connect(uartDevice, in => Sds021Listener.listen(in, handleReport))
+  Serial.connect(uartDevice, in => Sds021Listener.listen(in, handleReport))
 
   var count = 0
 

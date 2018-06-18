@@ -1,6 +1,6 @@
 ## Introduction
 
-This package periodically reads physically attached sensors (Serial/UART) and distributes readings to external services.
+This app periodically reads physically attached sensors (Serial/UART) and distributes readings to external services.
 
 Currently supported sensors: 
 
@@ -30,7 +30,7 @@ mainly add startup on boot functionality, which will be harder to achieve otherw
 
 ### Raspberry Pi
 
-Following is a step by step guide to install a Raspberry Pi with fijnstof running:
+Skip this section if you have a running Pi. Following is a step by step guide to install a Raspberry Pi with (a local build) of fijnstof running:
 
 - Download the latest Raspbian, and extract it to get the .img
 - `dd if=yourimage.img of=/dev/wherever the sd card is bs=8M`
@@ -48,11 +48,40 @@ Following is a step by step guide to install a Raspberry Pi with fijnstof runnin
     
 Check your router for the assigned IP address, or try `fijnstof.local` or whatever hostname you chose instead.
 
+### Optional: Add authorized SSH key
+
+To avoid having to enter your password for every _ssh_ or _scp_, you can add an SSH public key to the pi. 
+
+First make sure you have a public key
+
+    ls -l ~/.ssh/id_rsa.pub
+
+If no key exists, create one:
+
+    ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+Copy the _public key_ (only) to the pi:
+
+    scp ~/.ssh/id_rsa.pub pi@fijnstof.local:
+
+On the pi, check if there is no existing `authorized_keys` file present:
+
+    ls -l ~/.ssh/authorized_keys
+
+If not present, create and move:
+
+    mkdir ~/.ssh/
+    mv ~/id_rsa.pub ~/.ssh/authorized_keys
+
+Otherwise, just add the key:
+
+    cat ~/id_rsa.pub >> ~/.ssh/authorized_keys
+
 ### Debian package
     
-From your host computer, copy the Debian package:
+From your host computer, copy the Debian package, using the chosen hostname from above:
 
-    scp target/fijnstof_1.0_all.deb pi@remotepi:
+    scp target/fijnstof_1.0_all.deb pi@fijnstof.local:
 
 On the Pi, install the package 
    
@@ -70,6 +99,14 @@ Configuration is in:
     
 Set the serial device here, the host/port of the target Domoticz installation.
 
+Start the service
+
+    sudo service fijnstof start
+    
+Logging should appear in the daemon log
+
+    tail -f /var/log/daemon.log
+
 ### Domoticz
 
 In Domoticz -> Settings -> Hardware, add new Dummy hardware
@@ -82,9 +119,11 @@ You can add the new devices to the _floor plan_ if you have one, and drag them t
 
 ### Luftdaten
 
-If the sensor is outside, you may consider connecting to a Citizen Science project on [luftdaten.info](http://luftdaten.info). 
+[Luftdaten.info](http://luftdaten.info) is a Citizen Science project to collect as many particulate sensor data as possible, and show it on a map. 
+This project was specifically created with the idea in mind to make contribution as easy as possible. 
+If the sensor is _outside_ (nobody cares about your indoor readings), you may consider connecting to the luftdaten.info API. 
 Once you retrieved the ID of your sensor from the logging (eg fijnstof-12345), use that to register at the bottom of [their DIY page](https://luftdaten.info/en/construction-manual/). 
 After some time (days), you  will get a confirmation, and you will see the measurements on the map on your specified 
-location: [maps.luftdaten.info](http://maps.luftdaten.info), but also anyone else interested in particulate rates in their area or anywhere else.
+location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), but also anyone else interested in particulate rates in their area or anywhere else.
 
 
