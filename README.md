@@ -32,11 +32,14 @@ mainly add startup on boot functionality, which will be harder to achieve otherw
 
 Skip this section if you have a running Pi. Following is a step by step guide to install a Raspberry Pi with (a local build) of fijnstof running:
 
-- Download the latest Raspbian, and extract it to get the .img
-- `dd if=yourimage.img of=/dev/wherever the sd card is bs=8M`
+- Download [the latest Raspbian](https://www.raspberrypi.org/downloads/raspbian/), and extract it to get the .img
+- `sudo fdisk -l` to determine the block device of your SD card (check size)
+- `sudo dd if=yourimage.img of=/dev/mmcwherever bs=8M`
 - `sync`
 - Eject and mount again on your running linux machine
 - Add an empty file called `ssh` in the boot partition. This will allow ssh to be enabled at first boot, so you don't need to attach keyboard or monitor.
+- Check your router for the assigned IP address, or try `fijnstof.local` or whatever hostname you chose instead.
+- `ssh pi@raspberrypi`, replace _raspberrypi_ with whatever hostname or IP address was assigned
 - On boot, run `sudo raspi-config` and configure at least the following:
     - password, something other than `raspberrypi`
     - hostname, eg `fijnstof`
@@ -46,8 +49,6 @@ Skip this section if you have a running Pi. Following is a step by step guide to
     - Locale, keyboard layout
     - Expand filesystem, to take advantage of the entire SD card storage
     
-Check your router for the assigned IP address, or try `fijnstof.local` or whatever hostname you chose instead.
-
 ### Optional: Add authorized SSH key
 
 To avoid having to enter your password for every _ssh_ or _scp_, you can add an SSH public key to the pi. 

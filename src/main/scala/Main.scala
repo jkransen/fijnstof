@@ -18,7 +18,7 @@ object Main extends App {
 
   val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
   val id = for {
-    cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption // TODO allow test to use file under test/resources
+    cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
     firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
   } yield "fijnstof-" + firstMatch.group(1)
   log.info(s"Machine id: $id")
@@ -29,6 +29,7 @@ object Main extends App {
   val pm25Idx = config.getString("domoticz.pm25Idx")
   val pm10Idx = config.getString("domoticz.pm10Idx")
   val uartDevice = config.getString("uart.device")
+  val luftdatenId = if (!config.getIsNull("luftdaten.id")) Some(config.getString("luftdaten.id")) else None
 
   log.info(s"UART (Serial) device: $uartDevice")
   log.info(s"PM2.5 IDX: $pm25Idx, PM10 IDX: $pm10Idx")
@@ -42,9 +43,7 @@ object Main extends App {
   println(s"Machine ID: $id")
 
   Serial.connect(uartDevice) match {
-    case Some(is) => Sds021Reader.source(is).foreach {
-      case Some(report) => handleReport(report)
-    }
+    case Some(is) => Sds011Reader.stream(is).foreach(handleReport(_))
     case None => log.error("Serial device not found")
   }
 

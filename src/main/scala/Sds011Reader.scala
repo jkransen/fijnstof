@@ -13,8 +13,10 @@ object Sds011Reader {
 
   private val log = LoggerFactory.getLogger("Serial")
 
+  def stream(in: InputStream): Stream[Report] = next(in) #:: stream(in)
+
   @tailrec
-  def source(in: InputStream): Stream[Report] = Stream {
+  def next(in: InputStream): Report = {
     log.trace("Reading serial input")
     val b0: Int = in.read
     if (b0 == 0xaa) {
@@ -43,6 +45,6 @@ object Sds011Reader {
         }
       }
     }
-    source(in)
+    next(in)
   }
 }
