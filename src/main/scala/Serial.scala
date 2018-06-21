@@ -1,36 +1,36 @@
-import java.io._
 
+import java.io.InputStream
+
+import akka.stream.IOResult
+import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import purejavacomm.{CommPortIdentifier, SerialPort}
 
+import scala.annotation.tailrec
+import scala.concurrent.Future
+
 object Serial {
 
-  val log = LoggerFactory.getLogger("Serial")
+  private val log = LoggerFactory.getLogger("Serial")
 
-  def connect(portName: String, handleInput: InputStream => Any) {
-    findPort(portName) match {
-      case Some(port) => {
-        log.info(s"Port found: $portName")
-        val in = port.getInputStream
-        handleInput(in)
-      }
-      case None => {
-        log.error(s"Could not find port $portName")
-      }
-    }
+  def connect(portName: String): Option[InputStream] = {
+    findPort(portName) map (_.getInputStream)
   }
 
   def findPort(portName: String): Option[SerialPort] = {
-    import java.util._
-    def findPort0(ports: Enumeration[CommPortIdentifier]): Option[SerialPort] = {
+    @tailrec
+    def findPort0(ports: java.util.Enumeration[CommPortIdentifier]): Option[SerialPort] = {
       if (ports.hasMoreElements) {
         val nextPortId: CommPortIdentifier = ports.nextElement
-        if (nextPortId.getName().equalsIgnoreCase(portName)) {
+        if (nextPortId.getName.equalsIgnoreCase(portName)) {
+          log.info(s"Serial port found: $portName")
           Some(openPort(nextPortId))
         } else {
           findPort0(ports)
         }
       } else {
+        log.info(s"Serial port $portName not found")
         None
       }
     }

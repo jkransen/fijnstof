@@ -4,7 +4,7 @@ import org.scalatest.FlatSpec
 import org.scalamock.scalatest.MockFactory
 import javax.xml.bind.DatatypeConverter
 
-class Sds021ListenerSpec extends FlatSpec with MockFactory {
+class Sds011ListenerSpec extends FlatSpec with MockFactory {
 
   private val mockRecipient = mockFunction[Report, Unit]
 
@@ -20,7 +20,7 @@ class Sds021ListenerSpec extends FlatSpec with MockFactory {
 
     mockRecipient expects expectedReport once
 
-    Sds021Listener.listen(validPayload, mockRecipient)
+    Sds021Reader.source(validPayload)
 
     // TODO end test
   }

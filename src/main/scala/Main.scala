@@ -41,7 +41,12 @@ object Main extends App {
 
   println(s"Machine ID: $id")
 
-  Serial.connect(uartDevice, in => Sds021Listener.listen(in, handleReport))
+  Serial.connect(uartDevice) match {
+    case Some(is) => Sds021Reader.source(is).foreach {
+      case Some(report) => handleReport(report)
+    }
+    case None => log.error("Serial device not found")
+  }
 
   var count = 0
 

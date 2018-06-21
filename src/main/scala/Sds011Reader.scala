@@ -9,12 +9,12 @@ case class Report(id: Int, pm25: Int, pm10: Int) {
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
 }
 
-object Sds021Listener {
+object Sds011Reader {
 
-  val log = LoggerFactory.getLogger("Serial")
+  private val log = LoggerFactory.getLogger("Serial")
 
   @tailrec
-  def listen(in: InputStream, sendReport: Report => Unit) {
+  def source(in: InputStream): Stream[Report] = Stream {
     log.trace("Reading serial input")
     val b0: Int = in.read
     if (b0 == 0xaa) {
@@ -31,16 +31,18 @@ object Sds021Listener {
         val id = (b6 * 256) + b7
         val expectedChecksum = (b2 + b3 + b4 + b5 + b6 + b7) & 0xff
         val b8 = in.read
-        if (b8 != expectedChecksum) {
-          log.error(s"Checksum, expected: $expectedChecksum, actual: $b8")
-        } else {
+        if (b8 == expectedChecksum) {
           val b9 = in.read
           if (b9 == 0xab) {
-            sendReport(Report(id, pm25, pm10))
+            Report(id, pm25, pm10)
+          } else {
+            log.error(s"Wrong tail: $b9")
           }
+        } else {
+          log.error(s"Checksum, expected: $expectedChecksum, actual: $b8")
         }
       }
     }
-    listen(in, sendReport)
+    source(in)
   }
 }
