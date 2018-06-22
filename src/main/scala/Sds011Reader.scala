@@ -17,7 +17,8 @@ object Sds011Reader {
 
   @tailrec
   def next(in: InputStream): Report = {
-    log.trace("Reading serial input")
+    log.debug("Reading serial input")
+    print("next ")
     val b0: Int = in.read
     if (b0 == 0xaa) {
       val b1 = in.read
@@ -36,7 +37,7 @@ object Sds011Reader {
         if (b8 == expectedChecksum) {
           val b9 = in.read
           if (b9 == 0xab) {
-            Report(id, pm25, pm10)
+            return Report(id, pm25, pm10)
           } else {
             log.error(s"Wrong tail: $b9")
           }
@@ -45,6 +46,8 @@ object Sds011Reader {
         }
       }
     }
-    next(in)
+    stream(in)
   }
 }
+
+class EndOfStreamException(msg: String) extends RuntimeException

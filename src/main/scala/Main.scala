@@ -43,7 +43,7 @@ object Main extends App {
   println(s"Machine ID: $id")
 
   Serial.connect(uartDevice) match {
-    case Some(is) => Sds011Reader.stream(is).foreach(handleReport(_))
+    case Some(is) => Sds011Reader.stream(is).foreach(handleReport)
     case None => log.error("Serial device not found")
   }
 

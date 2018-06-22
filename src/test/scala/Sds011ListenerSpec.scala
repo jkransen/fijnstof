@@ -1,12 +1,10 @@
 import java.io.{ByteArrayInputStream, InputStream}
 
 import org.scalatest.FlatSpec
-import org.scalamock.scalatest.MockFactory
 import javax.xml.bind.DatatypeConverter
+import org.scalatest.Matchers._
 
-class Sds011ListenerSpec extends FlatSpec with MockFactory {
-
-  private val mockRecipient = mockFunction[Report, Unit]
+class Sds011ListenerSpec extends FlatSpec {
 
   "Valid payload with correct checksum" should "send precisely one Report" in {
 
@@ -16,13 +14,15 @@ class Sds011ListenerSpec extends FlatSpec with MockFactory {
     val reading10 = 4 * 256 + 3
     val id = 5 * 256 + 6
 
-    val expectedReport = Report(id,reading25,reading10)
+    val expectedReport = Report(id, reading25, reading10)
 
-    mockRecipient expects expectedReport once
+    println("expecting")
 
-    Sds021Reader.source(validPayload)
+    val actualReport = Sds011Reader.stream(validPayload).head
 
-    // TODO end test
+    println(s"actual: $actualReport")
+
+    expectedReport should equal(actualReport)
   }
 
   implicit def hexToInputStream(str: String): InputStream = new ByteArrayInputStream(DatatypeConverter.parseHexBinary(str.replaceAll("\\s", "")))
