@@ -46,8 +46,7 @@ object Sds011Reader {
         }
       }
     }
-    stream(in)
+    next(in)
   }
 }
 
-class EndOfStreamException(msg: String) extends RuntimeException
