@@ -1,4 +1,3 @@
-import Main.count
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import akka.actor.ActorSystem
@@ -16,26 +15,17 @@ object Main extends App {
 
   private val log = LoggerFactory.getLogger("Main")
 
-  val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
-  val id = for {
-    cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
-    firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
-  } yield "fijnstof-" + firstMatch.group(1)
-  log.info(s"Machine id: $id")
+  private val configs = ConfigFactory.load().getConfigList("devices")
+  configs.forEach {
+    config =>
+      val uartDevice = config.getString("device")
+      log.info(s"UART (Serial) device: $uartDevice")
 
-  private val config = ConfigFactory.load().getConfig("uart")
-  val uartDevice = config.getString("device")
-  log.info(s"UART (Serial) device: $uartDevice")
-
-//  if (config.hasPath("domoticz")) {
-    val host = config.getString("domoticz.host")
-    val port = config.getString("domoticz.port")
-    val pm25Idx = config.getString("domoticz.pm25Idx")
-    val pm10Idx = config.getString("domoticz.pm10Idx")
-    log.info(s"Domoticz host: $host, port: $port")
-    log.info(s"PM2.5 IDX: $pm25Idx, PM10 IDX: $pm10Idx")
-//  }
-  val luftdatenId = if (!config.getIsNull("luftdaten.id")) Some(config.getString("luftdaten.id")) else None
+      if (config.hasPath("domoticz")) {
+        val domoticzConfig = config.getConfig("domoticz")
+      }
+      val luftdatenId = if (!config.getIsNull("luftdaten.id")) Some(config.getString("luftdaten.id")) else None
+  }
 
 
   implicit val system: ActorSystem = ActorSystem()
@@ -43,7 +33,7 @@ object Main extends App {
   // needed for the future flatMap/onComplete in the end
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-  println(s"Machine ID: $id")
+  log.info(s"Machine id: $machineId")
 
   if (args.contains("list")) {
     Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
@@ -84,7 +74,7 @@ object Main extends App {
 
   def sendLuftdaten(report: Report): Unit = {
     val postUrl = "https://api.luftdaten.info/v1/push-sensor-data/"
-    val id = "fijnstof-" + report.id // id.getOrElse("fijnstof-" + report.id)))
+    val id = "fijnstof-" + report.id // machineId.getOrElse("fijnstof-" + report.id)))
     log.debug(s"Luftdaten ID: $id")
 
     val json = s"""
@@ -109,5 +99,13 @@ object Main extends App {
             log.info(s"Luftdaten succeeded: $entity"))
       case Failure(e) => log.error("Luftdaten failed", e)
     }
+  }
+
+  val machineId: Option[String] = {
+    val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
+    val id = for {
+      cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
+      firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
+    } yield "fijnstof-" + firstMatch.group(1)
   }
 }

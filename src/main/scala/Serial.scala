@@ -4,6 +4,8 @@ import java.io.InputStream
 import org.slf4j.LoggerFactory
 import purejavacomm.{CommPortIdentifier, SerialPort}
 
+import scala.collection.JavaConverters._
+
 object Serial {
 
   private val log = LoggerFactory.getLogger("Serial")
@@ -26,8 +28,6 @@ object Serial {
     port.setFlowControlMode(SerialPort.FLOWCONTROL_XONXOFF_IN + SerialPort.FLOWCONTROL_XONXOFF_OUT)
     port
   }
-
-  import scala.collection.JavaConverters._
 
   def listPorts = CommPortIdentifier.getPortIdentifiers.asScala.toList
 }

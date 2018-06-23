@@ -107,6 +107,10 @@ Start the service
 Logging should appear in the daemon log
 
     tail -f /var/log/daemon.log
+    
+### Run from CLI
+
+You can manually start the application from the command prompt. 
 
 ### Domoticz
 
