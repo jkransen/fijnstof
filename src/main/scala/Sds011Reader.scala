@@ -17,8 +17,7 @@ object Sds011Reader {
 
   @tailrec
   def next(in: InputStream): Report = {
-    log.debug("Reading serial input")
-    print("next ")
+    log.trace("Reading serial input")
     val b0: Int = in.read
     if (b0 == 0xaa) {
       val b1 = in.read

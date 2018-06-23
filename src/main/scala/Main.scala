@@ -23,17 +23,20 @@ object Main extends App {
   } yield "fijnstof-" + firstMatch.group(1)
   log.info(s"Machine id: $id")
 
-  private val config = ConfigFactory.load()
-  val host = config.getString("domoticz.host")
-  val port = config.getString("domoticz.port")
-  val pm25Idx = config.getString("domoticz.pm25Idx")
-  val pm10Idx = config.getString("domoticz.pm10Idx")
-  val uartDevice = config.getString("uart.device")
+  private val config = ConfigFactory.load().getConfig("uart")
+  val uartDevice = config.getString("device")
+  log.info(s"UART (Serial) device: $uartDevice")
+
+//  if (config.hasPath("domoticz")) {
+    val host = config.getString("domoticz.host")
+    val port = config.getString("domoticz.port")
+    val pm25Idx = config.getString("domoticz.pm25Idx")
+    val pm10Idx = config.getString("domoticz.pm10Idx")
+    log.info(s"Domoticz host: $host, port: $port")
+    log.info(s"PM2.5 IDX: $pm25Idx, PM10 IDX: $pm10Idx")
+//  }
   val luftdatenId = if (!config.getIsNull("luftdaten.id")) Some(config.getString("luftdaten.id")) else None
 
-  log.info(s"UART (Serial) device: $uartDevice")
-  log.info(s"PM2.5 IDX: $pm25Idx, PM10 IDX: $pm10Idx")
-  log.info(s"Domoticz host: $host, port: $port")
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -42,9 +45,14 @@ object Main extends App {
 
   println(s"Machine ID: $id")
 
-  Serial.connect(uartDevice) match {
-    case Some(is) => Sds011Reader.stream(is).foreach(handleReport)
-    case None => log.error("Serial device not found")
+  if (args.contains("list")) {
+    Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
+  } else {
+    Serial.connect(uartDevice) match {
+      case Some(is) if args.contains("test") => Sds011Reader.stream(is).headOption.foreach(handleReport)
+      case Some(is) => Sds011Reader.stream(is).foreach(handleReport)
+      case None => log.error("Serial device not found")
+    }
   }
 
   var count = 0

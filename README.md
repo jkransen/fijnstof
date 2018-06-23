@@ -128,3 +128,8 @@ After some time (days), you  will get a confirmation, and you will see the measu
 location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), but also anyone else interested in particulate rates in their area or anywhere else.
 
 
+## Notes on Mac
+
+On Mac, the SDS011 / SDS021 sensors need an additional driver installed. 
+[After installation and reboot](https://kig.re/2014/12/31/how-to-use-arduino-nano-mini-pro-with-CH340G-on-mac-osx-yosemite.html), you can hopefully
+see an additional serial device, something like `tty.wchusbserialfd130` under `/dev`.
