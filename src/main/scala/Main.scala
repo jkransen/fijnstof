@@ -1,111 +1,68 @@
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpEntity, _}
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContextExecutor
+import scala.util.Try
 import scala.reflect.io.File
 
 object Main extends App {
 
   private val log = LoggerFactory.getLogger("Main")
 
-  private val configs = ConfigFactory.load().getConfigList("devices")
-  configs.forEach {
-    config =>
-      val uartDevice = config.getString("device")
-      log.info(s"UART (Serial) device: $uartDevice")
-
-      if (config.hasPath("domoticz")) {
-        val domoticzConfig = config.getConfig("domoticz")
-      }
-      val luftdatenId = if (!config.getIsNull("luftdaten.id")) Some(config.getString("luftdaten.id")) else None
-  }
-
-
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   // needed for the future flatMap/onComplete in the end
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-  log.info(s"Machine id: $machineId")
+  def executeConfig(config: Config ): Unit = {
+    val uartDevice = config.getString("device")
+    log.info(s"UART (Serial) device: $uartDevice")
 
-  if (args.contains("list")) {
-    Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
-  } else {
-    Serial.connect(uartDevice) match {
-      case Some(is) if args.contains("test") => Sds011Reader.stream(is).headOption.foreach(handleReport)
-      case Some(is) => Sds011Reader.stream(is).foreach(handleReport)
-      case None => log.error("Serial device not found")
-    }
-  }
 
-  var count = 0
+    val domoticz = if (config.hasPath("domoticz")) {
+      Some(Domoticz(config.getConfig("domoticz")))
+    } else None
+    val luftdaten = if (config.hasPath("luftdaten")) {
+      Some(Luftdaten(config.getConfig("luftdaten")))
+    } else None
 
-  def handleReport(report: Report): Unit = {
-    if (count <= 0) {
-      try {
-        log.debug("Report: " + report)
-        val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${report.pm25str}"
-        log.debug(get1)
-        val response1Future = Http().singleRequest(HttpRequest(uri = get1))
-        response1Future.onComplete {
-          case Success(response) => log.info("PM2.5 update: " + response.toString())
-          case Failure(e) => log.error("Domoticz PM2.5 failed", e)
+    var count = 0
+
+    def handleReport(report: Measurement): Unit = {
+      if (count <= 0) {
+        try {
+          domoticz.foreach(_.handle(report))
+          luftdaten.foreach(_.handle(report))
+          count = 150
+        } catch {
+          case e: Exception => log.error("Could not send measurement")
         }
-        val response2Future = Http().singleRequest(HttpRequest(uri = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${report.pm10str}"))
-        response2Future.onComplete {
-          case Success(response) => log.info("PM10 update: " + response.toString())
-          case Failure(e) => log.error("Domoticz PM10 failed", e)
-        }
-        sendLuftdaten(report)
-        count = 150
-      } catch {
-        case e: Exception => log.error("Could not update sensors", e)
       }
+      count = count - 1
     }
-    count = count - 1
-  }
 
-  def sendLuftdaten(report: Report): Unit = {
-    val postUrl = "https://api.luftdaten.info/v1/push-sensor-data/"
-    val id = "fijnstof-" + report.id // machineId.getOrElse("fijnstof-" + report.id)))
-    log.debug(s"Luftdaten ID: $id")
-
-    val json = s"""
-         |{
-         |    "software_version": "fijnstof 1.0",
-         |    "sensordatavalues": [
-         |        {"value_type": "P1", "value": "${report.pm10str}"},
-         |        {"value_type": "P2", "value": "${report.pm25str}"}
-         |    ]
-         |}
-       """.stripMargin
-
-    log.debug(s"JSON: $json")
-
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = postUrl, method = HttpMethods.POST)
-      .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id))
-      .withEntity(entity = HttpEntity(ContentTypes.`application/json`, json)))
-
-    responseFuture.onComplete {
-      case Success(response) =>
-        response.entity.toStrict(FiniteDuration(1, "second")).map(entity =>
-            log.info(s"Luftdaten succeeded: $entity"))
-      case Failure(e) => log.error("Luftdaten failed", e)
+    if (args.contains("list")) {
+      Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
+    } else {
+      Serial.connect(uartDevice) match {
+        case Some(is) if args.contains("test") => Sds011Reader.stream(is).headOption.foreach(handleReport)
+        case Some(is) => Sds011Reader.stream(is).foreach(handleReport)
+        case None => log.error("Serial device not found")
+      }
     }
   }
 
   val machineId: Option[String] = {
     val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
-    val id = for {
+    for {
       cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
       firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
     } yield "fijnstof-" + firstMatch.group(1)
   }
+
+  log.info(s"Machine id: $machineId")
+
+  ConfigFactory.load().getConfigList("devices").forEach(executeConfig)
 }

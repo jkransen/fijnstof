@@ -1,4 +1,3 @@
-
 import java.io.InputStream
 
 import org.slf4j.LoggerFactory
@@ -23,7 +22,7 @@ object Serial {
     portOption map openPort
   }
 
-  def openPort(portId: CommPortIdentifier): SerialPort = {
+  private def openPort(portId: CommPortIdentifier): SerialPort = {
     val port: SerialPort = portId.open("Fijnstof", 1000).asInstanceOf[SerialPort]
     port.setFlowControlMode(SerialPort.FLOWCONTROL_XONXOFF_IN + SerialPort.FLOWCONTROL_XONXOFF_OUT)
     port

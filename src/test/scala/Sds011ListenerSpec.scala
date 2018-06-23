@@ -14,46 +14,47 @@ class Sds011ListenerSpec extends FlatSpec {
     val reading10 = 4 * 256 + 3
     val id = 5 * 256 + 6
 
-    val expectedReport = Report(id, reading25, reading10)
+    val expectedReport = Sds011Measurement(id, reading25, reading10)
 
     val actualReport = Sds011Reader.stream(validPayload).head
 
     expectedReport should equal(actualReport)
   }
 
-  "Checksum error" should "skip Report" in {
+  "Checksum error" should "skip 1 Report" in {
 
     val invalidReading = "aa c0 01 02 03 04 05 06 14 ab"
     val validReading = "aa c0 01 00 01 00 00 01 03 ab"
 
-    val expectedReport = Report(1, 1, 1)
+    val expectedReport = Sds011Measurement(1, 1, 1)
 
     val actualReport = Sds011Reader.stream(invalidReading + validReading).head
 
     expectedReport should equal(actualReport)
   }
 
-//  "Bad footer" should "skip Report" in {
-//
-//    val invalidReading = "aa c0 01 02 03 04 05 06 14 aa"
-//    val validReading = "aa c0 01 00 01 00 00 01 03 ab"
-//
-//    val expectedReport = Report(1, 1, 1)
-//
-//    val actualReport = Sds011Reader.stream(invalidReading + validReading).head
-//
-//    expectedReport should equal(actualReport)
-//  }
+  "Bad footer" should "skip 1 Report" in {
+
+    val invalidReading = "aa c0 01 02 03 04 05 06 14 ac"
+    val validReading = "aa c0 01 00 01 00 00 01 03 ab"
+
+    val expectedReport = Sds011Measurement(1, 1, 1)
+
+    val actualReport = Sds011Reader.stream(invalidReading + validReading).head
+
+    expectedReport should equal(actualReport)
+  }
 
   "Measurement matching header" should "recover" in {
 
     val validPayload = "aa c0 01 02 03 aa c0 01 02 03 04 05 06 15 ab aa c0 01 02 03 04 05 06 15 ab"
+    //                  ^- reading     ^- actual start of payload    ^- recover from here
 
     val reading25 = 2 * 256 + 1
     val reading10 = 4 * 256 + 3
     val id = 5 * 256 + 6
 
-    val expectedReport = Report(id, reading25, reading10)
+    val expectedReport = Sds011Measurement(id, reading25, reading10)
 
     val actualReport = Sds011Reader.stream(validPayload).head
 

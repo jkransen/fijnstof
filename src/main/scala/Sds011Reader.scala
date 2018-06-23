@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
-case class Report(id: Int, pm25: Int, pm10: Int) {
+case class Sds011Measurement(id: Int, pm25: Int, pm10: Int) extends Measurement {
   val pm10str = s"${pm10 / 10}.${pm10 % 10}"
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
 }
@@ -13,10 +13,10 @@ object Sds011Reader {
 
   private val log = LoggerFactory.getLogger("Serial")
 
-  def stream(in: InputStream): Stream[Report] = next(in) #:: stream(in)
+  def stream(in: InputStream): Stream[Sds011Measurement] = next(in) #:: stream(in)
 
   @tailrec
-  def next(in: InputStream): Report = {
+  def next(in: InputStream): Sds011Measurement = {
     log.trace("Reading serial input")
     val b0: Int = in.read
     if (b0 == 0xaa) {
@@ -36,7 +36,7 @@ object Sds011Reader {
         if (b8 == expectedChecksum) {
           val b9 = in.read
           if (b9 == 0xab) {
-            return Report(id, pm25, pm10)
+            return Sds011Measurement(id, pm25, pm10)
           } else {
             log.error(s"Wrong tail: $b9")
           }
