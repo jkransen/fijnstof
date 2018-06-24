@@ -20,13 +20,13 @@ object Main extends App {
     val uartDevice = config.getString("device")
     log.info(s"UART (Serial) device: $uartDevice")
 
-    val sinks = Seq(
+    val handlers = Seq(
       config.as[Option[Config]]("domoticz").map(Domoticz(_)),
       config.as[Option[Config]]("luftdaten").map(Luftdaten(_))
-    ).collect { case Some(sink) => sink }
+    ).collect { case Some(handler) => handler }
 
     def handleMeasurement(measurement: Measurement): Unit = {
-      sinks.foreach(_.handle(measurement))
+      handlers.foreach(_.handle(measurement))
     }
 
     Serial.connect(uartDevice) match {
