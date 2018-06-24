@@ -50,8 +50,6 @@ object Main extends App {
         case None => log.error("Serial device not found")
       }
     }
-
-    system.terminate()
   }
 
   val machineId: Option[String] = {
@@ -65,4 +63,6 @@ object Main extends App {
   log.info(s"Machine id: $machineId")
 
   ConfigFactory.load().getConfigList("devices").forEach(executeConfig)
+
+  system.terminate()
 }
