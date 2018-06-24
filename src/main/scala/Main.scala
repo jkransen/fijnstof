@@ -13,13 +13,11 @@ object Main extends App {
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  // needed for the future flatMap/onComplete in the end
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   def executeConfig(config: Config ): Unit = {
     val uartDevice = config.getString("device")
     log.info(s"UART (Serial) device: $uartDevice")
-
 
     val domoticz = if (config.hasPath("domoticz")) {
       Some(Domoticz(config.getConfig("domoticz")))
@@ -30,11 +28,11 @@ object Main extends App {
 
     var count = 0
 
-    def handleReport(report: Measurement): Unit = {
+    def handleMeasurement(measurement: Measurement): Unit = {
       if (count <= 0) {
         try {
-          domoticz.foreach(_.handle(report))
-          luftdaten.foreach(_.handle(report))
+          domoticz.foreach(_.handle(measurement))
+          luftdaten.foreach(_.handle(measurement))
           count = 150
         } catch {
           case e: Exception => log.error("Could not send measurement")
@@ -47,11 +45,13 @@ object Main extends App {
       Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
     } else {
       Serial.connect(uartDevice) match {
-        case Some(is) if args.contains("test") => Sds011Reader.stream(is).headOption.foreach(handleReport)
-        case Some(is) => Sds011Reader.stream(is).foreach(handleReport)
+        case Some(is) if args.contains("test") => Sds011Reader.stream(is).headOption.foreach(handleMeasurement)
+        case Some(is) => Sds011Reader.stream(is).foreach(handleMeasurement)
         case None => log.error("Serial device not found")
       }
     }
+
+    system.terminate()
   }
 
   val machineId: Option[String] = {

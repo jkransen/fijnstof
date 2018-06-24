@@ -11,7 +11,7 @@ case class Sds011Measurement(id: Int, pm25: Int, pm10: Int) extends Measurement 
 
 object Sds011Reader {
 
-  private val log = LoggerFactory.getLogger("Serial")
+  private val log = LoggerFactory.getLogger("Sds011Reader")
 
   def stream(in: InputStream): Stream[Sds011Measurement] = next(in) #:: stream(in)
 

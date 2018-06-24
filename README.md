@@ -110,7 +110,22 @@ Logging should appear in the daemon log
     
 ### Run from CLI
 
-You can manually start the application from the command prompt. 
+You can manually start the application from the command prompt. Without options, it will run as in daemon mode,
+indefinitely reading and outputting, until you press Ctrl-C.
+
+    sbt run
+    
+To get a list of available serial devices, enter
+
+    sbt "run list"
+    
+To test the setup with 1 measurement, enter
+
+    sbt "run test"
+    
+Note the difference with the regular command to run the software tests
+
+    sbt test
 
 ### Domoticz
 
