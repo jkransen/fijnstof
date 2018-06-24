@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "io.circe"               %% "circe-core"        % circeVersion,
   "io.circe"               %% "circe-generic"     % circeVersion,
   "io.circe"               %% "circe-parser"      % circeVersion,
-
+  "com.iheart"             %% "ficus"             % "1.4.3",
   "com.typesafe.akka"      %% "akka-http-testkit" % "10.1.1"          % Test,
   "org.scalatest"          %% "scalatest"         % "3.0.5"           % Test,
   "org.scalamock"          %% "scalamock"         % "4.1.0"           % Test

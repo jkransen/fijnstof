@@ -2,6 +2,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import net.ceedubs.ficus.Ficus._
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.Try
@@ -15,40 +16,23 @@ object Main extends App {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-  def executeConfig(config: Config ): Unit = {
+  def runFlow(isTest: Boolean)(config: Config): Unit = {
     val uartDevice = config.getString("device")
     log.info(s"UART (Serial) device: $uartDevice")
 
-    val domoticz = if (config.hasPath("domoticz")) {
-      Some(Domoticz(config.getConfig("domoticz")))
-    } else None
-    val luftdaten = if (config.hasPath("luftdaten")) {
-      Some(Luftdaten(config.getConfig("luftdaten")))
-    } else None
-
-    var count = 0
+    val sinks = Seq(
+      config.as[Option[Config]]("domoticz").map(Domoticz(_)),
+      config.as[Option[Config]]("luftdaten").map(Luftdaten(_))
+    ).collect { case Some(sink) => sink }
 
     def handleMeasurement(measurement: Measurement): Unit = {
-      if (count <= 0) {
-        try {
-          domoticz.foreach(_.handle(measurement))
-          luftdaten.foreach(_.handle(measurement))
-          count = 150
-        } catch {
-          case e: Exception => log.error("Could not send measurement")
-        }
-      }
-      count = count - 1
+      sinks.foreach(_.handle(measurement))
     }
 
-    if (args.contains("list")) {
-      Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
-    } else {
-      Serial.connect(uartDevice) match {
-        case Some(is) if args.contains("test") => Sds011Reader.stream(is).headOption.foreach(handleMeasurement)
-        case Some(is) => Sds011Reader.stream(is).foreach(handleMeasurement)
-        case None => log.error("Serial device not found")
-      }
+    Serial.connect(uartDevice) match {
+      case Some(is) if isTest => Sds011Reader.stream(is).headOption.foreach(handleMeasurement)
+      case Some(is) => Sds011Reader.stream(is).grouped(90).map(_.head).foreach(handleMeasurement)
+      case None => log.error("Serial device not found")
     }
   }
 
@@ -62,7 +46,12 @@ object Main extends App {
 
   log.info(s"Machine id: $machineId")
 
-  ConfigFactory.load().getConfigList("devices").forEach(executeConfig)
+  if (args.contains("list")) {
+    Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
+  } else {
+    val isTest = args.contains("test")
+    ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
+  }
 
   system.terminate()
 }
