@@ -94,11 +94,21 @@ Please check if this is successful, or add it manually:
 
     sudo usermod -a -G dialout fijnstof
     
+List all available serial devices, and check if the one you expect to represent your device is among them:
+
+    fijnstof list
+    
+Take out the device, and see if it disappears from the list when running again. Then plug it back in.
+    
 Configuration is in:
 
     /etc/fijnstof/application.conf
     
-Set the serial device here, the host/port of the target Domoticz installation.
+Set the serial device here. Enable blocks for Domoticz or Luftdaten, whichever you want to use. Make a test run:
+
+    fijnstof test
+    
+See if you get any errors. Write down the machine id, something like `fijnstof-e123456e`. You will need this number later.
 
 Start the service
 
@@ -107,7 +117,7 @@ Start the service
 Logging should appear in the daemon log
 
     tail -f /var/log/daemon.log
-    
+        
 ### Run from CLI
 
 You can manually start the application from the command prompt. Without options, it will run as in daemon mode,
@@ -142,7 +152,7 @@ You can add the new devices to the _floor plan_ if you have one, and drag them t
 [Luftdaten.info](http://luftdaten.info) is a Citizen Science project to collect as many particulate sensor data as possible, and show it on a map. 
 This project was specifically created with the idea in mind to make contribution as easy as possible. 
 If the sensor is _outside_ (nobody cares about your indoor readings), you may consider connecting to the luftdaten.info API. 
-Once you retrieved the ID of your sensor from the logging (eg fijnstof-12345), use that to register at the bottom of [their DIY page](https://luftdaten.info/en/construction-manual/). 
+Once you retrieved the machine ID of your sensor from the logging (or by running `fijnstof test`, something like `fijnstof-e123456e`), use that to register at the bottom of [their DIY page](https://luftdaten.info/en/construction-manual/). 
 After some time (days), you  will get a confirmation, and you will see the measurements on the map on your specified 
 location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), but also anyone else interested in particulate rates in their area or anywhere else.
 
