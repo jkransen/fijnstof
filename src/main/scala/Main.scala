@@ -16,6 +16,14 @@ object Main extends App {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
+  lazy val machineId: Option[String] = {
+    val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
+    for {
+      cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
+      firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
+    } yield "fijnstof-" + firstMatch.group(1)
+  }
+
   def runFlow(isTest: Boolean)(config: Config): Unit = {
     val uartDevice = config.getString("device")
     log.info(s"UART (Serial) device: $uartDevice")
@@ -36,15 +44,7 @@ object Main extends App {
     }
   }
 
-  val machineId: Option[String] = {
-    val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
-    for {
-      cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
-      firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
-    } yield "fijnstof-" + firstMatch.group(1)
-  }
-
-  log.info(s"Machine id: $machineId")
+  log.info(s"Starting fijnstof, machine id: $machineId")
 
   if (args.contains("list")) {
     Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))

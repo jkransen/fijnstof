@@ -31,6 +31,13 @@ enablePlugins(SystemdPlugin)
 
 //debianPackageDependencies in Debian ++= Seq("java8-runtime")
 
+// application.conf should not be packaged itself
+mappings in Universal := {
+  (mappings in Universal).value filter {
+    case (file, name) =>  ! name.endsWith("application.conf")
+  }
+}
+
 mappings in Universal += {
   // we are using the reference.conf as default application.conf
   // the user can override settings here
