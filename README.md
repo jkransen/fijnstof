@@ -14,6 +14,8 @@ Currently supported external services:
 
 ## Packaging
 
+_Skip this section if you have a _fijnstof_1.0_all.deb_ file ready to install._
+
 Run this command to create a Debian package (.deb):
 
     sbt debian:packageBin
@@ -30,7 +32,9 @@ mainly add startup on boot functionality, which will be harder to achieve otherw
 
 ### Raspberry Pi
 
-Skip this section if you have a running Pi. Following is a step by step guide to install a Raspberry Pi with (a local build) of fijnstof running:
+_Skip this section if you have a running Pi. _
+
+Following is a step by step guide to install a Raspberry Pi with (a local build) of fijnstof running:
 
 - Download [the latest Raspbian](https://www.raspberrypi.org/downloads/raspbian/), and extract it to get the .img
 - `sudo fdisk -l` to determine the block device of your SD card (check size)
@@ -50,6 +54,8 @@ Skip this section if you have a running Pi. Following is a step by step guide to
     - Expand filesystem, to take advantage of the entire SD card storage
     
 ### Optional: Add authorized SSH key
+
+_Skip this section if you don't mind yet entering passwords._
 
 To avoid having to enter your password for every _ssh_ or _scp_, you can add an SSH public key to the pi. 
 
@@ -84,6 +90,8 @@ From your host computer, copy the Debian package, using the chosen hostname from
 
     scp target/fijnstof_1.0_all.deb pi@fijnstof.local:
 
+Note the trailing colon above.
+
 On the Pi, install the package 
    
     sudo dpkg -i fijnstof_1.0_all.deb
@@ -108,7 +116,7 @@ Set the serial device here. Enable blocks for Domoticz or Luftdaten, whichever y
 
     fijnstof test
     
-See if you get any errors. Write down the machine id, something like `fijnstof-e123456e`. You will need this number later.
+See if you get any errors. Write down the machine id, something like _fijnstof-e123456e_. You will need this number later.
 
 Start the service
 
@@ -139,22 +147,27 @@ Note the difference with the regular command to run the software tests
 
 ### Domoticz
 
+Domoticz is a system to automate your home. It supports a variety of protocols and devices, allowing you to control your home and respond to sensor values. 
+Domoticz also keeps track of historic readings, and presents them in diagrams. We can send our particulate measurements to Domoticz to track the trends over time.
+
 In Domoticz -> Settings -> Hardware, add new Dummy hardware
 
 On the Dummy hardware, create 2 virtual sensors, `PM2.5` and `PM10`. 
 Sensor type: _Custom sensor_. Enter (copy/paste) `µg/m³` for axis label. 
 Look up the assigned _IDX_ values under _Devices_ (order by IDX descending), and set them in the above configuration file.
 
-You can add the new devices to the _floor plan_ if you have one, and drag them to the correct physical place in the right room.
+You can add the new devices to the _Floor Plan_ if you have one, and drag them to the correct physical place in the right room.
 
 ### Luftdaten
 
 [Luftdaten.info](http://luftdaten.info) is a Citizen Science project to collect as many particulate sensor data as possible, and show it on a map. 
 This project was specifically created with the idea in mind to make contribution as easy as possible. 
 If the sensor is _outside_ (nobody cares about your indoor readings), you may consider connecting to the luftdaten.info API. 
-Once you retrieved the machine ID of your sensor from the logging (or by running `fijnstof test`, something like `fijnstof-e123456e`), use that to register at the bottom of [their DIY page](https://luftdaten.info/en/construction-manual/). 
+Once you retrieved the machine ID of your sensor from the logging (or by running `fijnstof test`, something like _fijnstof-e123456e_). 
+Use that to register at the bottom of [their DIY page](https://luftdaten.info/en/construction-manual/). 
 After some time (days), you  will get a confirmation, and you will see the measurements on the map on your specified 
-location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), but also anyone else interested in particulate rates in their area or anywhere else.
+location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), 
+but also anyone else interested in particulate rates in their area or anywhere else.
 
 
 ## Notes on Mac
