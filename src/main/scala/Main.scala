@@ -28,6 +28,8 @@ object Main extends App {
     val uartDevice = config.getString("device")
     log.info(s"UART (Serial) device: $uartDevice")
 
+    val source = MeasurementSource(config.getString("type"))
+
     val handlers = Seq(
       config.as[Option[Config]]("domoticz").map(Domoticz(_)),
       config.as[Option[Config]]("luftdaten").map(Luftdaten(_))
@@ -38,8 +40,8 @@ object Main extends App {
     }
 
     Serial.connect(uartDevice) match {
-      case Some(is) if isTest => Sds011Reader.stream(is).headOption.foreach(handleMeasurement)
-      case Some(is) => Sds011Reader.stream(is).grouped(90).map(_.head).foreach(handleMeasurement)
+      case Some(is) if isTest => source.stream(is).headOption.foreach(handleMeasurement)
+      case Some(is) => source.stream(is).grouped(90).map(_.head).foreach(handleMeasurement)
       case None => log.error("Serial device not found")
     }
   }

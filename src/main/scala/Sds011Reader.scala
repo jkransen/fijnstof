@@ -9,7 +9,7 @@ case class Sds011Measurement(id: Int, pm25: Int, pm10: Int) extends Measurement 
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
 }
 
-object Sds011Reader extends MeasurementSource[Sds011Measurement] {
+class Sds011Reader extends MeasurementSource[Sds011Measurement] {
 
   private val log = LoggerFactory.getLogger("Sds011Reader")
 

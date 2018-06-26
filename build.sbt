@@ -30,6 +30,8 @@ enablePlugins(JavaServerAppPackaging)
 enablePlugins(SystemdPlugin)
 
 //debianPackageDependencies in Debian ++= Seq("java8-runtime")
+//debianPackageDependencies in Debian ++= Seq("oracle-java8-jdk")
+//openjdk-8-jre-headless
 
 // application.conf should not be packaged itself
 mappings in Universal := {

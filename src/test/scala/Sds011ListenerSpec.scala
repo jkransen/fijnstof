@@ -16,7 +16,7 @@ class Sds011ListenerSpec extends FlatSpec {
 
     val expectedMeasurement = Sds011Measurement(id, reading25, reading10)
 
-    val actualMeasurement = Sds011Reader.stream(validPayload).head
+    val actualMeasurement = new Sds011Reader().stream(validPayload).head
 
     expectedMeasurement should equal(actualMeasurement)
   }
@@ -28,7 +28,7 @@ class Sds011ListenerSpec extends FlatSpec {
 
     val expectedMeasurement = Sds011Measurement(1, 1, 1)
 
-    val actualMeasurement = Sds011Reader.stream(invalidReading + validReading).head
+    val actualMeasurement = new Sds011Reader().stream(invalidReading + validReading).head
 
     expectedMeasurement should equal(actualMeasurement)
   }
@@ -40,7 +40,7 @@ class Sds011ListenerSpec extends FlatSpec {
 
     val expectedMeasurement = Sds011Measurement(1, 1, 1)
 
-    val actualMeasurement = Sds011Reader.stream(invalidReading + validReading).head
+    val actualMeasurement = new Sds011Reader().stream(invalidReading + validReading).head
 
     expectedMeasurement should equal(actualMeasurement)
   }
@@ -56,7 +56,7 @@ class Sds011ListenerSpec extends FlatSpec {
 
     val expectedMeasurement = Sds011Measurement(id, reading25, reading10)
 
-    val actualMeasurement = Sds011Reader.stream(validPayload).head
+    val actualMeasurement = new Sds011Reader().stream(validPayload).head
 
     expectedMeasurement should equal(actualMeasurement)
   }
