@@ -25,9 +25,9 @@ class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, mater
 
   override def handle(measurement: Measurement): Unit = measurement match {
     case sds011Measurement: Sds011Measurement =>
-      val id = "fijnstof-" + luftdatenId.getOrElse(machineId.getOrElse(sds011Measurement.id))
+      val id = luftdatenId.getOrElse(machineId.getOrElse("fijnstof-" + sds011Measurement.id))
       val json = toJson(sds011Measurement)
-      log.trace(s"JSON: $json")
+      log.debug(s"JSON: $json")
 
       val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = postUrl, method = HttpMethods.POST)
         .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id))
