@@ -1,12 +1,17 @@
 import java.io.InputStream
-
 import org.slf4j.LoggerFactory
-
 import scala.annotation.tailrec
 
 case class Sds011Measurement(id: Int, pm25: Int, pm10: Int) extends Measurement {
   val pm10str = s"${pm10 / 10}.${pm10 % 10}"
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
+}
+
+object Sds011Measurement {
+  def average(ms: List[Sds011Measurement]): Sds011Measurement = {
+    val (pm25agg, pm10agg) = ms.foldRight((0,0))((nxt, agg) => (nxt.pm25 + agg._1, nxt.pm10 + agg._2))
+    Sds011Measurement(ms.head.id, pm25agg / ms.size, pm10agg / ms.size)
+  }
 }
 
 class Sds011Reader extends MeasurementSource[Sds011Measurement] {
@@ -17,7 +22,6 @@ class Sds011Reader extends MeasurementSource[Sds011Measurement] {
 
   @tailrec
   private def next(in: InputStream): Sds011Measurement = {
-    log.trace("Reading serial input")
     val b0: Int = in.read
     if (b0 == 0xaa) {
       val b1 = in.read
@@ -38,10 +42,10 @@ class Sds011Reader extends MeasurementSource[Sds011Measurement] {
           if (b9 == 0xab) {
             return Sds011Measurement(id, pm25, pm10)
           } else {
-            log.error(s"Wrong tail: $b9")
+            log.trace(s"Wrong tail: $b9")
           }
         } else {
-          log.error(s"Checksum, expected: $expectedChecksum, actual: $b8")
+          log.trace(s"Checksum, expected: $expectedChecksum, actual: $b8")
         }
       }
     }

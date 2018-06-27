@@ -1,6 +1,3 @@
-import java.io.{ByteArrayInputStream, InputStream}
-
-import javax.xml.bind.DatatypeConverter
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers._
 
