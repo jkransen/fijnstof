@@ -32,7 +32,7 @@ mainly add startup on boot functionality, which will be harder to achieve otherw
 
 ### Raspberry Pi
 
-_Skip this section if you have a running Pi. _
+_Skip this section if you have a running Pi._
 
 Following is a step by step guide to install a Raspberry Pi with (a local build) of fijnstof running:
 
@@ -55,7 +55,7 @@ Following is a step by step guide to install a Raspberry Pi with (a local build)
     
 ### Optional: Add authorized SSH key
 
-_Skip this section if you don't mind yet entering passwords._
+_Skip this section if you don't mind entering passwords._
 
 To avoid having to enter your password for every _ssh_ or _scp_, you can add an SSH public key to the pi. 
 
@@ -126,7 +126,7 @@ Logging should appear in the daemon log
 
     tail -f /var/log/daemon.log
         
-### Run from CLI
+### Run from CLI during development
 
 You can manually start the application from the command prompt. Without options, it will run as in daemon mode,
 indefinitely reading and outputting, until you press Ctrl-C.
