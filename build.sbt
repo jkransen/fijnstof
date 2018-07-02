@@ -6,7 +6,7 @@ packageSummary := "SDS021 sensor reader for Domoticz"
 packageDescription := """This software reads sensors and pushes readings to external services.
   Supported sensors: SDS011, SDS021.
   Supported services: Domoticz, Luftdaten."""
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.6"
 
 val circeVersion = "0.9.3"
 
@@ -30,7 +30,7 @@ enablePlugins(JavaServerAppPackaging)
 enablePlugins(SystemdPlugin)
 
 //debianPackageDependencies in Debian ++= Seq("java8-runtime")
-debianPackageDependencies in Debian ++= Seq("oracle-java8-jdk")
+//debianPackageDependencies in Debian ++= Seq("oracle-java8-jdk")
 //openjdk-8-jre-headless
 
 // application.conf should not be packaged itself
@@ -44,9 +44,11 @@ mappings in Universal += {
   // we are using the reference.conf as default application.conf
   // the user can override settings here
   val conf = (resourceDirectory in Compile).value / "reference.conf"
-  // val conf = (resourceDirectory in Compile).value / "application.conf"
   conf -> "conf/application.conf"
 }
 
 daemonGroup in Linux := "dialout"
+
+// add jvm parameter for typesafe config
+bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf""""
 

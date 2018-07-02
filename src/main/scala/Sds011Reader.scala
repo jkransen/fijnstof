@@ -5,6 +5,8 @@ import scala.annotation.tailrec
 case class Sds011Measurement(id: Int, pm25: Int, pm10: Int) extends Measurement {
   val pm10str = s"${pm10 / 10}.${pm10 % 10}"
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
+
+  override def toString: String = s"Sds011 pm2.5=$pm25str pm10=$pm10str"
 }
 
 object Sds011Measurement {

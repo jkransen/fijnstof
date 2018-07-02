@@ -36,6 +36,7 @@ object Main extends App {
     ).collect { case Some(handler) => handler }
 
     def handleMeasurement(measurement: Measurement): Unit = {
+      log.debug(s"Measurement: ${measurement.toString}")
       handlers.foreach(_.handle(measurement))
     }
 
