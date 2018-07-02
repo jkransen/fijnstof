@@ -17,15 +17,15 @@ import io.circe.syntax._
 
 class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, materializer: ActorMaterializer, executionContext: ExecutionContextExecutor) extends MeasurementHandler {
 
-  private val log = LoggerFactory.getLogger("Luftdaten")
+  val log = LoggerFactory.getLogger("Luftdaten")
 
-  log.debug(s"Luftdaten ID: $luftdatenId")
+  log.info(s"Luftdaten ID: $luftdatenId")
 
   val postUrl = "https://api.luftdaten.info/v1/push-sensor-data/"
 
   override def handle(measurement: Measurement): Unit = measurement match {
     case sds011Measurement: Sds011Measurement =>
-      val id = luftdatenId.getOrElse(machineId.getOrElse("fijnstof-" + sds011Measurement.id))
+      val id = luftdatenId.getOrElse("fijnstof-" + sds011Measurement.id)
       val json = toJson(sds011Measurement)
       log.debug(s"JSON: $json")
 
@@ -35,7 +35,7 @@ class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, mater
 
       responseFuture.onComplete {
         case Success(response) =>
-          response.entity.toStrict(FiniteDuration(1, "second")).map(entity =>
+          response.entity.toStrict(FiniteDuration(5, "seconds")).map(entity =>
             log.debug(s"Luftdaten succeeded: $entity"))
         case Failure(e) => log.error("Luftdaten failed", e)
       }
@@ -45,7 +45,7 @@ class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, mater
 object Luftdaten {
 
   def apply(config: Config)(implicit system: ActorSystem, materializer: ActorMaterializer, executionContext: ExecutionContextExecutor): Luftdaten = {
-    val id = config.as[Option[String]]("id")
+    val id: Option[String] = config.as[Option[String]]("id").orElse(Main.machineId)
     new Luftdaten(id)
   }
 
