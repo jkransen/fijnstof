@@ -6,7 +6,7 @@ case class Sds011Measurement(id: Int, pm25: Int, pm10: Int) extends Measurement 
   val pm10str = s"${pm10 / 10}.${pm10 % 10}"
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
 
-  override def toString: String = s"Sds011 pm2.5=$pm25str pm10=$pm10str"
+  override def toString: String = s"Sds011 id=$id pm2.5=$pm25str pm10=$pm10str"
 }
 
 object Sds011Measurement {
@@ -36,7 +36,7 @@ class Sds011Reader extends MeasurementSource[Sds011Measurement] {
         val pm10 = (b5 * 256) + b4
         val b6 = in.read
         val b7 = in.read
-        val id = (b6 * 256) + b7
+        val id = (b7 * 256) + b6
         val expectedChecksum = (b2 + b3 + b4 + b5 + b6 + b7) & 0xff
         val b8 = in.read
         if (b8 == expectedChecksum) {

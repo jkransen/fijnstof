@@ -12,7 +12,7 @@ class Sds011Spec extends FlatSpec {
 
     val reading25 = 2 * 256 + 1
     val reading10 = 4 * 256 + 3
-    val id = 5 * 256 + 6
+    val id = 6 * 256 + 5
 
     val expectedMeasurement = Sds011Measurement(id, reading25, reading10)
 
@@ -24,7 +24,7 @@ class Sds011Spec extends FlatSpec {
   "Checksum error" should "skip 1 measurement" in {
 
     val invalidReading = "aa c0 01 02 03 04 05 06 14 ab"
-    val validReading = "aa c0 01 00 01 00 00 01 03 ab"
+    val validReading = "aa c0 01 00 01 00 01 00 03 ab"
 
     val expectedMeasurement = Sds011Measurement(1, 1, 1)
 
@@ -36,7 +36,7 @@ class Sds011Spec extends FlatSpec {
   "Bad footer" should "skip 1 measurement" in {
 
     val invalidReading = "aa c0 01 02 03 04 05 06 14 ac"
-    val validReading = "aa c0 01 00 01 00 00 01 03 ab"
+    val validReading = "aa c0 01 00 01 00 01 00 03 ab"
 
     val expectedMeasurement = Sds011Measurement(1, 1, 1)
 
@@ -52,7 +52,7 @@ class Sds011Spec extends FlatSpec {
 
     val reading25 = 2 * 256 + 1
     val reading10 = 4 * 256 + 3
-    val id = 5 * 256 + 6
+    val id = 6 * 256 + 5
 
     val expectedMeasurement = Sds011Measurement(id, reading25, reading10)
 
