@@ -17,7 +17,7 @@ import io.circe.syntax._
 
 class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, materializer: ActorMaterializer, executionContext: ExecutionContextExecutor) extends MeasurementHandler {
 
-  val log = LoggerFactory.getLogger("Luftdaten")
+  private val log = LoggerFactory.getLogger("Luftdaten")
 
   log.info(s"Luftdaten ID: $luftdatenId")
 
@@ -27,7 +27,7 @@ class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, mater
     case sds011Measurement: Sds011Measurement =>
       val id = luftdatenId.getOrElse("fijnstof-" + sds011Measurement.id)
       val json = toJson(sds011Measurement)
-      log.debug(s"JSON: $json")
+      log.trace(s"JSON: $json")
 
       val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = postUrl, method = HttpMethods.POST)
         .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id))

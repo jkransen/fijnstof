@@ -26,9 +26,7 @@ object Main extends App {
 
   def runFlow(isTest: Boolean)(config: Config): Unit = {
     val uartDevice = config.getString("device")
-    log.info(s"UART (Serial) device: $uartDevice")
-
-    val source = MeasurementSource(config.getString("type"))
+    log.info(s"Connecting to UART (Serial) device: $uartDevice")
 
     val handlers = Seq(
       config.as[Option[Config]]("domoticz").map(Domoticz(_)),
@@ -40,9 +38,13 @@ object Main extends App {
       handlers.foreach(_.handle(measurement))
     }
 
+    val source = MeasurementSource(config.getString("type"))
+    val interval = config.as[Option[Int]]("interval").getOrElse(90)
+    val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
+
     Serial.connect(uartDevice) match {
       case Some(is) if isTest => source.stream(is).headOption.foreach(handleMeasurement)
-      case Some(is) => source.stream(is).sliding(90, 90).map(_.toList).map(Sds011Measurement.average).foreach(handleMeasurement)
+      case Some(is) => source.stream(is).sliding(batchSize, interval).map(_.toList).map(Sds011Measurement.average).foreach(handleMeasurement)
       case None => log.error("Serial device not found")
     }
   }

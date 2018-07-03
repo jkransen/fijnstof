@@ -19,15 +19,19 @@ class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implic
     case sds011Measurement: Sds011Measurement => {
       log.debug("Measurement: " + sds011Measurement)
       val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${sds011Measurement.pm25str}"
-      log.debug(get1)
+      log.trace(get1)
       val response1Future = Http().singleRequest(HttpRequest(uri = get1))
       response1Future.onComplete {
-        case Success(response) => log.debug("PM2.5 update: " + response.toString())
+        case Success(response) =>
+          log.debug(s"PM2.5 update for IDX $pm25Idx successful")
+          log.trace("Domoticz PM2.5 response: " + response.toString())
         case Failure(e) => log.error("Domoticz PM2.5 failed", e)
       }
       val response2Future = Http().singleRequest(HttpRequest(uri = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${sds011Measurement.pm10str}"))
       response2Future.onComplete {
-        case Success(response) => log.debug("PM10 update: " + response.toString())
+        case Success(response) =>
+          log.debug(s"PM10 update for IDX $pm10Idx successful")
+          log.trace("Domoticz PM10 response: " + response.toString())
         case Failure(e) => log.error("Domoticz PM10 failed", e)
       }
     }
