@@ -42,11 +42,11 @@ Following is a step by step guide to install a Raspberry Pi with (a local build)
 - `sync`
 - Eject and mount again on your running linux machine
 - Add an empty file called `ssh` in the boot partition. This will allow ssh to be enabled at first boot, so you don't need to attach keyboard or monitor.
-- Check your router for the assigned IP address, or try `fijnstof.local` or whatever hostname you chose instead.
+- Check your router for the assigned IP address, or try `raspberrypi.local`.
 - `ssh pi@raspberrypi`, replace _raspberrypi_ with whatever hostname or IP address was assigned
 - On boot, run `sudo raspi-config` and configure at least the following:
     - password, something other than `raspberrypi`
-    - hostname, eg `fijnstof`
+    - hostname, from here, we will assume `fijnstof`
     - boot into CLI, without logging in
     - No splash screen
     - Wifi country, SSID and password (if you don't want/have an ethernet cable available)

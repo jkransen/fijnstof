@@ -28,5 +28,5 @@ object Serial {
     port
   }
 
-  def listPorts = CommPortIdentifier.getPortIdentifiers.asScala.toList
+  def listPorts: List[CommPortIdentifier] = CommPortIdentifier.getPortIdentifiers.asScala.toList
 }
