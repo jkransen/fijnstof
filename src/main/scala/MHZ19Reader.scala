@@ -1,4 +1,4 @@
-import java.io.InputStream
+import java.io.{InputStream, OutputStream}
 
 import org.slf4j.LoggerFactory
 
@@ -43,5 +43,29 @@ class MHZ19Reader extends MeasurementSource[MHZ19Measurement] {
       }
     }
     next(in)
+  }
+}
+
+import scala.annotation.tailrec
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+object Poller {
+
+  private val command = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79).map(_.toByte)
+
+  @tailrec
+  private def pollRec(interval: Int, out: OutputStream): Nothing = {
+    out.write(command)
+    Thread.sleep(interval * 1000)
+    pollRec(interval, out)
+  }
+
+  def poll(interval: Int, out: OutputStream): Nothing = {
+    Future {
+      pollRec(interval, out)
+    }
+    println("Poll interval is running")
   }
 }
