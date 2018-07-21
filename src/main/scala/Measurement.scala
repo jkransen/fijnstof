@@ -12,7 +12,7 @@ trait MeasurementSource[A <: Measurement] {
 }
 
 object MeasurementSource {
-  def apply[A <: Measurement, B <: MeasurementSource[A]](sourceType: String): Sds011Reader = {
-    new Sds011Reader
+  def apply[A <: Measurement, B <: MeasurementSource[A]](sourceType: String): Sds011Reader = sourceType match {
+    case "sds011" => new Sds011Reader
   }
 }
