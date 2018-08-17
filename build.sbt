@@ -50,5 +50,4 @@ mappings in Universal += {
 daemonGroup in Linux := "dialout"
 
 // add jvm parameter for typesafe config
-bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf""""
-
+bashScriptExtraDefines in Linux += """addJava "-Dconfig.file=${app_home}/../conf/application.conf""""

@@ -4,23 +4,23 @@ import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
-case class MHZ19Measurement(ppm: Int) extends Measurement
+case class CO2Measurement(ppm: Int) extends Measurement
 
-object MHZ19Measurement {
-  def average(ms: List[MHZ19Measurement]): MHZ19Measurement = {
+object CO2Measurement {
+  def average(ms: List[CO2Measurement]): CO2Measurement = {
     val ppmSum = ms.foldRight(0)((nxt, sum) => nxt.ppm + sum)
-    MHZ19Measurement(ppmSum / ms.size)
+    CO2Measurement(ppmSum / ms.size)
   }
 }
 
-class MHZ19Reader extends MeasurementSource[MHZ19Measurement] {
+class MHZ19Reader extends MeasurementSource[CO2Measurement] {
 
   private val log = LoggerFactory.getLogger("MHZ19Reader")
 
-  override def stream(in: InputStream): Stream[MHZ19Measurement] = next(in) #:: stream(in)
+  override def stream(in: InputStream): Stream[CO2Measurement] = next(in) #:: stream(in)
 
   @tailrec
-  private def next(in: InputStream): MHZ19Measurement = {
+  private def next(in: InputStream): CO2Measurement = {
     val b0: Int = in.read
     if (b0 == 0xff) {
       val b1 = in.read
@@ -32,11 +32,10 @@ class MHZ19Reader extends MeasurementSource[MHZ19Measurement] {
         val b5 = in.read
         val b6 = in.read
         val b7 = in.read
-        // TODO calculate checksum
-        val expectedChecksum = (b2 + b3 + b4 + b5 + b6 + b7) & 0xff
+        val expectedChecksum = 0xff - b1 - b2 - b3 - b4 - b5 - b6 - b7 + 1
         val b8 = in.read
-        if (true || b8 == expectedChecksum) {
-          return MHZ19Measurement(ppm)
+        if (b8 == expectedChecksum) {
+          return CO2Measurement(ppm)
         } else {
           log.trace(s"Checksum, expected: $expectedChecksum, actual: $b8")
         }
@@ -62,10 +61,9 @@ object Poller {
     pollRec(interval, out)
   }
 
-  def poll(interval: Int, out: OutputStream): Nothing = {
+  def poll(interval: Int, out: OutputStream): Future[Nothing] = {
     Future {
       pollRec(interval, out)
     }
-    println("Poll interval is running")
   }
 }

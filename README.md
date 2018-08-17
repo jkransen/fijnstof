@@ -23,6 +23,9 @@ Run this command to create a Debian package (.deb):
 The result will be this file:   
 
     target/fijnstof_1.0_all.deb
+    
+    echo "deb http://kransen.nl/repo binary" > /etc/apt/sources.list.d/myrepo.list
+    apt-get update
 
 ## Installation
 

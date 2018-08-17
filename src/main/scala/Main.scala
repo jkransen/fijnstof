@@ -55,7 +55,7 @@ object Main extends App {
 
       Serial.connect(uartDevice) match {
         case Some(is) if isTest => source.stream(is).headOption.foreach(handleMeasurement)
-        case Some(is) => source.stream(is).sliding(batchSize, interval).map(_.toList).map(MHZ19Measurement.average).foreach(handleMeasurement)
+        case Some(is) => source.stream(is).sliding(batchSize, interval).map(_.toList).map(CO2Measurement.average).foreach(handleMeasurement)
         case None => log.error("Serial device not found")
       }
     }
