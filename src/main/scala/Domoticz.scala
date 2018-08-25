@@ -1,14 +1,13 @@
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
-import akka.stream.ActorMaterializer
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContext}
 import scala.util.{Failure, Success}
 
-class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String) extends Actor {
+class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implicit system: ActorSystem, ec: ExecutionContext) extends Actor {
 
   private val log = LoggerFactory.getLogger("Domoticz")
 
@@ -43,13 +42,16 @@ class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String) extend
 
   override def receive: Receive = {
     case pm25Measurement: Pm25Measurement => save(pm25Measurement)
-    case pm10Measurement: Pm25Measurement => save(pm10Measurement)
+    case pm10Measurement: Pm10Measurement => save(pm10Measurement)
+    case (pm25Measurement: Pm25Measurement, pm10Measurement: Pm10Measurement) =>
+      save(pm25Measurement)
+      save(pm10Measurement)
   }
 }
 
 object Domoticz {
 
-  def props(config: Config): Props = {
+  def props(config: Config)(implicit system: ActorSystem, ec: ExecutionContext): Props = {
     val host = config.getString("host")
     val port = config.getInt("port")
     val pm25Idx = config.getString("pm25Idx")

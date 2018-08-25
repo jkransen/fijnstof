@@ -5,9 +5,10 @@ import akka.actor.{Actor, ActorRef, Props}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-case class CO2Measurement(ppm: Int) extends Measurement
+case class CO2Measurement(ppm: Int)
 
 object CO2Measurement {
   def average(ms: List[CO2Measurement]): CO2Measurement = {
@@ -19,17 +20,17 @@ object CO2Measurement {
 object Mhz19Actor {
   case object Tick
 
-  def props(in: InputStream, out: OutputStream)(co2Listener: ActorRef): Props = Props(new Mhz19Actor(in, out, co2Listener))
+  def props(in: InputStream, out: OutputStream, co2Listeners: Seq[ActorRef])(implicit ec: ExecutionContext): Props = Props(new Mhz19Actor(in, out, co2Listeners))
 }
 
-class Mhz19Actor(in: InputStream, out: OutputStream, co2Listener: ActorRef) extends Actor {
+class Mhz19Actor(in: InputStream, out: OutputStream, co2Listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
 
   private val log = LoggerFactory.getLogger("MHZ19Reader")
 
   override def receive: Receive = {
     case Tick =>
       val co2 = readNext(in)
-      co2Listener ! co2
+      co2Listeners.foreach(_ ! co2)
       tick()
   }
 

@@ -8,13 +8,13 @@ import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 import net.ceedubs.ficus.Ficus._
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-class Luftdaten(luftdatenId: Option[String]) extends Actor {
+class Luftdaten(luftdatenId: Option[String])(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer) extends Actor {
 
   private val log = LoggerFactory.getLogger("Luftdaten")
 
@@ -46,7 +46,7 @@ class Luftdaten(luftdatenId: Option[String]) extends Actor {
 
 object Luftdaten {
 
-  def props(config: Config): Props = {
+  def props(config: Config)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Props = {
     val id: Option[String] = config.as[Option[String]]("id").orElse(Main.machineId)
     Props(new Luftdaten(id))
   }

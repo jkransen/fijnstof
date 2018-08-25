@@ -29,25 +29,20 @@ object Main extends App {
     log.info(s"Connecting to UART (Serial) device: $uartDevice")
 
     val targets: Seq[ActorRef] = Seq(
-      config.as[Option[Config]]("domoticz").map(Domoticz.props(_)).map(system.actorOf(_, "domoticz")),
-      config.as[Option[Config]]("luftdaten").map(Luftdaten.props(_)).map(system.actorOf(_, "luftdaten"))
+      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf(_, "domoticz")),
+      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf(_, "luftdaten"))
     ).collect { case Some(target) => target }
 
-    def handleMeasurement(measurement: Measurement): Unit = {
-      log.debug(s"Measurement: ${measurement.toString}")
-      targets.foreach(_ ! measurement)
-    }
-
     val sourceType = config.getString("type")
-    val interval = config.as[Option[Int]]("interval").getOrElse(90)
-    val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
+    // val interval = config.as[Option[Int]]("interval").getOrElse(90)
+    // val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
 
     Serial.findPort(uartDevice) match {
       case Some(port) =>
         val source = if (sourceType.equalsIgnoreCase("sds011")) {
-          Sds011Actor.props(port.getInputStream)
+          Sds011Actor.props(port.getInputStream, targets)
         } else if (sourceType.equalsIgnoreCase("mhz19")) {
-          Mhz19Actor.props(port.getInputStream, port.getOutputStream)
+          Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets)
         }
       case None => log.error("Serial device not found")
     }
@@ -62,5 +57,6 @@ object Main extends App {
     ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
   }
 
-  system.terminate()
+
+  // system.terminate()
 }

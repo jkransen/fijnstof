@@ -1,19 +1,20 @@
 import java.io.InputStream
 
 import Sds011Actor.Tick
-import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-case class Pm25Measurement(id: Int, pm25: Int) extends Measurement {
+case class Pm25Measurement(id: Int, pm25: Int) {
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
 
   override def toString: String = s"Sds011 id=$id pm2.5=$pm25str"
 }
 
-case class Pm10Measurement(id: Int, pm10: Int) extends Measurement {
+case class Pm10Measurement(id: Int, pm10: Int) {
   val pm10str = s"${pm10 / 10}.${pm10 % 10}"
 
   override def toString: String = s"Sds011 id=$id pm10=$pm10str"
@@ -24,17 +25,17 @@ object Sds011Actor {
   case object Tick
 
 
-  def props(in: InputStream)(particulateListener: ActorRef): Props = Props(new Sds011Actor(in, particulateListener))
+  def props(in: InputStream, listeners: Seq[ActorRef])(implicit ec: ExecutionContext): Props = Props(new Sds011Actor(in, listeners))
 }
 
-class Sds011Actor(in: InputStream, particulateListener: ActorRef) extends Actor {
+class Sds011Actor(in: InputStream, listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
 
   private val log = LoggerFactory.getLogger("Sds011Actor")
 
   override def receive: Receive = {
     case Tick =>
       val (pm25, pm10) = readNext(in)
-      particulateListener ! (pm25, pm10)
+      listeners.foreach(_ ! (pm25, pm10))
       context.system.scheduler.scheduleOnce(1 second, self, Tick)
   }
 
