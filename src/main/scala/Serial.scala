@@ -1,4 +1,4 @@
-import java.io.InputStream
+import java.io.{InputStream, OutputStream}
 
 import org.slf4j.LoggerFactory
 import purejavacomm.{CommPortIdentifier, SerialPort}
@@ -8,10 +8,6 @@ import scala.collection.JavaConverters._
 object Serial {
 
   private val log = LoggerFactory.getLogger("Serial")
-
-  def connect(portName: String): Option[InputStream] = {
-    findPort(portName) map (_.getInputStream)
-  }
 
   def findPort(portName: String): Option[SerialPort] = {
     val portOption = listPorts.find(_.getName.equalsIgnoreCase(portName))

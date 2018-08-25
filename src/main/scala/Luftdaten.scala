@@ -1,6 +1,5 @@
 import Luftdaten.toJson
-import Main.machineId
-import akka.actor.ActorSystem
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
@@ -15,7 +14,7 @@ import scala.util.{Failure, Success}
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, materializer: ActorMaterializer, executionContext: ExecutionContextExecutor) extends MeasurementHandler {
+class Luftdaten(luftdatenId: Option[String]) extends Actor {
 
   private val log = LoggerFactory.getLogger("Luftdaten")
 
@@ -23,34 +22,37 @@ class Luftdaten(luftdatenId: Option[String])(implicit system: ActorSystem, mater
 
   val postUrl = "https://api.luftdaten.info/v1/push-sensor-data/"
 
-  override def handle(measurement: Measurement): Unit = measurement match {
-    case sds011Measurement: Sds011Measurement =>
-      val id = luftdatenId.getOrElse("fijnstof-" + sds011Measurement.id)
-      val json = toJson(sds011Measurement)
-      log.trace(s"JSON: $json")
+  def save(pm25Measurement: Pm25Measurement, pm10Measurement: Pm10Measurement): Unit = {
+    val id = luftdatenId.getOrElse("fijnstof-" + pm25Measurement.id)
+    val json = toJson(pm25Measurement, pm10Measurement)
+    log.trace(s"JSON: $json")
 
-      val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = postUrl, method = HttpMethods.POST)
-        .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, json)))
+    val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = postUrl, method = HttpMethods.POST)
+      .withHeaders(RawHeader("X-PIN", "1"), RawHeader("X-Sensor", id))
+      .withEntity(HttpEntity(ContentTypes.`application/json`, json)))
 
-      responseFuture.onComplete {
-        case Success(response) =>
-          response.entity.toStrict(FiniteDuration(5, "seconds")).map(entity =>
-            log.debug(s"Luftdaten succeeded: $entity"))
-        case Failure(e) => log.error("Luftdaten failed", e)
-      }
+    responseFuture.onComplete {
+      case Success(response) =>
+        response.entity.toStrict(FiniteDuration(5, "seconds")).map(entity =>
+          log.debug(s"Luftdaten succeeded: $entity"))
+      case Failure(e) => log.error("Luftdaten failed", e)
     }
+  }
+
+  override def receive: Receive = {
+    case (pm25Measurement: Pm25Measurement, pm10Measurement: Pm10Measurement) => save(pm25Measurement, pm10Measurement)
+  }
 }
 
 object Luftdaten {
 
-  def apply(config: Config)(implicit system: ActorSystem, materializer: ActorMaterializer, executionContext: ExecutionContextExecutor): Luftdaten = {
+  def props(config: Config): Props = {
     val id: Option[String] = config.as[Option[String]]("id").orElse(Main.machineId)
-    new Luftdaten(id)
+    Props(new Luftdaten(id))
   }
 
-  def toJson(sds011Measurement: Sds011Measurement): String = {
-    LuftdatenPayload(SensorDataValue("P1", sds011Measurement.pm10str) :: SensorDataValue("P2", sds011Measurement.pm25str) :: Nil).asJson.noSpaces
+  def toJson(pm25Measurement: Pm25Measurement, pm10Measurement: Pm10Measurement): String = {
+    LuftdatenPayload(SensorDataValue("P1", pm10Measurement.pm10str) :: SensorDataValue("P2", pm25Measurement.pm25str) :: Nil).asJson.noSpaces
   }
 }
 

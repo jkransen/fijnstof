@@ -1,8 +1,11 @@
 import java.io.{InputStream, OutputStream}
 
+import Mhz19Actor.Tick
+import akka.actor.{Actor, ActorRef, Props}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.concurrent.duration._
 
 case class CO2Measurement(ppm: Int) extends Measurement
 
@@ -13,14 +16,29 @@ object CO2Measurement {
   }
 }
 
-class MHZ19Reader extends MeasurementSource[CO2Measurement] {
+object Mhz19Actor {
+  case object Tick
+
+  def props(in: InputStream, out: OutputStream)(co2Listener: ActorRef): Props = Props(new Mhz19Actor(in, out, co2Listener))
+}
+
+class Mhz19Actor(in: InputStream, out: OutputStream, co2Listener: ActorRef) extends Actor {
 
   private val log = LoggerFactory.getLogger("MHZ19Reader")
 
-  override def stream(in: InputStream): Stream[CO2Measurement] = next(in) #:: stream(in)
+  override def receive: Receive = {
+    case Tick =>
+      val co2 = readNext(in)
+      co2Listener ! co2
+      tick()
+  }
+
+  override def preStart(): Unit = {
+    tick()
+  }
 
   @tailrec
-  private def next(in: InputStream): CO2Measurement = {
+  private def readNext(in: InputStream): CO2Measurement = {
     val b0: Int = in.read
     if (b0 == 0xff) {
       val b1 = in.read
@@ -41,29 +59,13 @@ class MHZ19Reader extends MeasurementSource[CO2Measurement] {
         }
       }
     }
-    next(in)
+    readNext(in)
   }
-}
-
-import scala.annotation.tailrec
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
-object Poller {
 
   private val command = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79).map(_.toByte)
 
-  @tailrec
-  private def pollRec(interval: Int, out: OutputStream): Nothing = {
+  private def tick() = {
     out.write(command)
-    Thread.sleep(interval * 1000)
-    pollRec(interval, out)
-  }
-
-  def poll(interval: Int, out: OutputStream): Future[Nothing] = {
-    Future {
-      pollRec(interval, out)
-    }
+    context.system.scheduler.scheduleOnce(1 second, self, Tick)
   }
 }
