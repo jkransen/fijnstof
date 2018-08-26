@@ -39,11 +39,15 @@ object Main extends App {
 
     Serial.findPort(uartDevice) match {
       case Some(port) =>
-        val source = if (sourceType.equalsIgnoreCase("sds011")) {
-          Sds011Actor.props(port.getInputStream, targets)
+        val source: Option[Props] = if (sourceType.equalsIgnoreCase("sds011")) {
+          Some(Sds011Actor.props(port.getInputStream, targets))
         } else if (sourceType.equalsIgnoreCase("mhz19")) {
-          Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets)
+          Some(Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets))
+        } else {
+          log.error(s"Source type $sourceType unknown")
+          None
         }
+        source.foreach(system.actorOf(_, s"${sourceType}_source"))
       case None => log.error("Serial device not found")
     }
   }
@@ -58,5 +62,6 @@ object Main extends App {
   }
 
 
+  log.debug("debug")
   // system.terminate()
 }

@@ -25,7 +25,7 @@ object Mhz19Actor {
 
 class Mhz19Actor(in: InputStream, out: OutputStream, co2Listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
 
-  private val log = LoggerFactory.getLogger("MHZ19Reader")
+  private val log = LoggerFactory.getLogger("Mhz19Actor")
 
   override def receive: Receive = {
     case Tick =>

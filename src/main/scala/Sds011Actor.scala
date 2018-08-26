@@ -24,16 +24,17 @@ object Sds011Actor {
 
   case object Tick
 
-
   def props(in: InputStream, listeners: Seq[ActorRef])(implicit ec: ExecutionContext): Props = Props(new Sds011Actor(in, listeners))
 }
 
 class Sds011Actor(in: InputStream, listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
 
   private val log = LoggerFactory.getLogger("Sds011Actor")
+  log.info("Sds011Actor")
 
   override def receive: Receive = {
     case Tick =>
+      log.debug("Tick")
       val (pm25, pm10) = readNext(in)
       listeners.foreach(_ ! (pm25, pm10))
       context.system.scheduler.scheduleOnce(1 second, self, Tick)

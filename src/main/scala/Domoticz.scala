@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpRequest
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.{ExecutionContext}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implicit system: ActorSystem, ec: ExecutionContext) extends Actor {
@@ -15,21 +15,21 @@ class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implic
   log.info(s"PM2.5 IDX: $pm25Idx, PM10 IDX: $pm10Idx")
 
   def save(pm25Measurement: Pm25Measurement): Unit = {
-      log.debug("PM2.5 Measurement: " + pm25Measurement)
-      val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${pm25Measurement.pm25str}"
-      log.trace(get1)
-      val response1Future = Http().singleRequest(HttpRequest(uri = get1))
-      response1Future.onComplete {
-        case Success(response) =>
-          log.debug(s"PM2.5 update for IDX $pm25Idx successful")
-          log.trace("Domoticz PM2.5 response: " + response.toString())
-        case Failure(e) => log.error("Domoticz PM2.5 failed", e)
-      }
+    log.debug("PM2.5 Measurement: " + pm25Measurement)
+    val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${pm25Measurement.pm25str}"
+    log.trace(get1)
+    val response1Future = Http().singleRequest(HttpRequest(uri = get1))
+    response1Future.onComplete {
+      case Success(response) =>
+        log.debug(s"PM2.5 update for IDX $pm25Idx successful")
+        log.trace("Domoticz PM2.5 response: " + response.toString())
+      case Failure(e) => log.error("Domoticz PM2.5 failed", e)
     }
+  }
 
   def save(pm10Measurement: Pm10Measurement): Unit = {
     log.debug("PM10 Measurement: " + pm10Measurement)
-    val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${pm10Measurement.pm10str}"
+    val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${pm10Measurement.pm10str}"
     log.trace(get1)
     val response2Future = Http().singleRequest(HttpRequest(uri = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${pm10Measurement.pm10str}"))
     response2Future.onComplete {
