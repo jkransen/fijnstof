@@ -5,10 +5,12 @@ import akka.actor.{Actor, ActorRef, Props}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-case class CO2Measurement(ppm: Int)
+case class CO2Measurement(ppm: Int) {
+  val str: String = ppm.toString
+}
 
 object CO2Measurement {
   def average(ms: List[CO2Measurement]): CO2Measurement = {
@@ -29,17 +31,16 @@ class Mhz19Actor(in: InputStream, out: OutputStream, co2Listeners: Seq[ActorRef]
 
   override def receive: Receive = {
     case Tick =>
-      val co2 = readNext(in)
-      co2Listeners.foreach(_ ! co2)
       tick()
   }
 
   override def preStart(): Unit = {
+    context.system.dispatcher.execute(() => keepReading(in))
     tick()
   }
 
   @tailrec
-  private def readNext(in: InputStream): CO2Measurement = {
+  private def keepReading(in: InputStream): Nothing = {
     val b0: Int = in.read
     if (b0 == 0xff) {
       val b1 = in.read
@@ -54,19 +55,23 @@ class Mhz19Actor(in: InputStream, out: OutputStream, co2Listeners: Seq[ActorRef]
         val expectedChecksum = 0xff - b1 - b2 - b3 - b4 - b5 - b6 - b7 + 1
         val b8 = in.read
         if (b8 == expectedChecksum) {
-          return CO2Measurement(ppm)
+          val co2 = CO2Measurement(ppm)
+          log.debug(s"co2: ${co2.str}")
+          co2Listeners.foreach(_ ! co2)
         } else {
           log.trace(s"Checksum, expected: $expectedChecksum, actual: $b8")
         }
       }
     }
-    readNext(in)
+    keepReading(in)
   }
 
   private val command = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79).map(_.toByte)
 
-  private def tick() = {
+  private def tick(): Unit = {
+    log.debug("tick")
     out.write(command)
     context.system.scheduler.scheduleOnce(1 second, self, Tick)
   }
+
 }

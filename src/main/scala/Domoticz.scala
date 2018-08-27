@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implicit system: ActorSystem, ec: ExecutionContext) extends Actor {
+class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String, co2Idx: String)(implicit system: ActorSystem, ec: ExecutionContext) extends Actor {
 
   private val log = LoggerFactory.getLogger("Domoticz")
 
@@ -31,12 +31,25 @@ class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implic
     log.debug("PM10 Measurement: " + pm10Measurement)
     val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${pm10Measurement.pm10str}"
     log.trace(get1)
-    val response2Future = Http().singleRequest(HttpRequest(uri = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${pm10Measurement.pm10str}"))
+    val response2Future = Http().singleRequest(HttpRequest(uri = get1))
     response2Future.onComplete {
       case Success(response) =>
         log.debug(s"PM10 update for IDX $pm10Idx successful")
         log.trace("Domoticz PM10 response: " + response.toString())
       case Failure(e) => log.error("Domoticz PM10 failed", e)
+    }
+  }
+
+  def save(co2Measurement: CO2Measurement): Unit = {
+    log.debug("CO2 Measurement: " + co2Measurement)
+    val get1 = s"http://$host:$port/json.htm?type=command&param=udevice&idx=$co2Idx&nvalue=&svalue=${co2Measurement.str}"
+    log.trace(get1)
+    val response2Future = Http().singleRequest(HttpRequest(uri = get1))
+    response2Future.onComplete {
+      case Success(response) =>
+        log.debug(s"CO2 update for IDX $co2Idx successful")
+        log.trace("Domoticz CO2 response: " + response.toString())
+      case Failure(e) => log.error("Domoticz CO2 failed", e)
     }
   }
 
@@ -46,6 +59,7 @@ class Domoticz(host: String, port: Int, pm25Idx: String, pm10Idx: String)(implic
     case (pm25Measurement: Pm25Measurement, pm10Measurement: Pm10Measurement) =>
       save(pm25Measurement)
       save(pm10Measurement)
+    case co2Measurement: CO2Measurement => save(co2Measurement)
   }
 }
 
@@ -56,6 +70,7 @@ object Domoticz {
     val port = config.getInt("port")
     val pm25Idx = config.getString("pm25Idx")
     val pm10Idx = config.getString("pm10Idx")
-    Props(new Domoticz(host, port, pm25Idx, pm10Idx))
+    val co2Idx = config.getString("co2Idx")
+    Props(new Domoticz(host, port, pm25Idx, pm10Idx, co2Idx))
   }
 }
