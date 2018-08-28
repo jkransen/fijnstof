@@ -52,26 +52,28 @@ class Mhz19Actor(in: InputStream, out: OutputStream, co2Listeners: Seq[ActorRef]
         val b5 = in.read
         val b6 = in.read
         val b7 = in.read
-        val expectedChecksum = 0xff - b1 - b2 - b3 - b4 - b5 - b6 - b7 + 1
+        val expectedChecksum = (0xff - b1 - b2 - b3 - b4 - b5 - b6 - b7 + 1) & 0xff
         val b8 = in.read
         if (b8 == expectedChecksum) {
           val co2 = CO2Measurement(ppm)
           log.debug(s"co2: ${co2.str}")
           co2Listeners.foreach(_ ! co2)
         } else {
-          log.trace(s"Checksum, expected: $expectedChecksum, actual: $b8")
+          log.debug(s"Checksum, expected: $expectedChecksum, actual: $b8")
         }
       }
     }
     keepReading(in)
   }
 
-  private val command = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79).map(_.toByte)
+  private val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79).map(_.toByte)
 
-  private def tick(): Unit = {
-    log.debug("tick")
-    out.write(command)
-    context.system.scheduler.scheduleOnce(1 second, self, Tick)
+  private val calibrateZeroCommand = Array(0Xff, 0x01, 0x87, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78).map(_.toByte)
+
+  private def tick() = {
+//    out.write(calibrateZeroCommand)
+    out.write(readCommand)
+    context.system.scheduler.scheduleOnce(3 seconds, self, Tick)
   }
 
 }

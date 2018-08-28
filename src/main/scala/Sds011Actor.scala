@@ -24,28 +24,38 @@ object Sds011Actor {
 
   case object Tick
 
-  def props(in: InputStream, listeners: Seq[ActorRef])(implicit ec: ExecutionContext): Props = Props(new Sds011Actor(in, listeners))
+  def props(in: InputStream, interval: Int, listeners: Seq[ActorRef])(implicit ec: ExecutionContext): Props = Props(new Sds011Actor(in, interval, listeners))
 }
 
-class Sds011Actor(in: InputStream, listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
+class Sds011Actor(in: InputStream, interval: Int, listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
 
   private val log = LoggerFactory.getLogger("Sds011Actor")
-  log.info("Sds011Actor")
 
-  override def receive: Receive = {
+  log.info(s"interval: $interval")
+
+  override def receive: Receive = receiveWithCache(List())
+
+  def receiveWithCache(cache: List[(Pm25Measurement, Pm10Measurement)]): Receive = {
+    case (pm25: Pm25Measurement, pm10: Pm10Measurement) =>
+      context.become(receiveWithCache((pm25, pm10) :: cache))
     case Tick =>
-      log.debug("Tick")
-      val (pm25, pm10) = readNext(in)
-      listeners.foreach(_ ! (pm25, pm10))
-      context.system.scheduler.scheduleOnce(1 second, self, Tick)
+      if (cache.nonEmpty) {
+        log.debug("Tick")
+        listeners.foreach(_ ! average(cache))
+        context.become(receiveWithCache(List()))
+      } else {
+        log.debug("Tick, no data")
+      }
+      context.system.scheduler.scheduleOnce(interval seconds, self, Tick)
   }
 
   override def preStart(): Unit = {
+    context.system.dispatcher.execute(() => keepReading(in))
     context.system.scheduler.scheduleOnce(0 seconds, self, Tick)
   }
 
   @tailrec
-  private def readNext(in: InputStream): (Pm25Measurement, Pm10Measurement) = {
+  private def keepReading(in: InputStream): Nothing = {
     val b0: Int = in.read
     if (b0 == 0xaa) {
       val b1 = in.read
@@ -64,7 +74,7 @@ class Sds011Actor(in: InputStream, listeners: Seq[ActorRef])(implicit ec: Execut
         if (b8 == expectedChecksum) {
           val b9 = in.read
           if (b9 == 0xab) {
-            return (Pm25Measurement(id, pm25), Pm10Measurement(id, pm10))
+            self ! (Pm25Measurement(id, pm25), Pm10Measurement(id, pm10))
           } else {
             log.trace(s"Wrong tail: $b9")
           }
@@ -73,7 +83,11 @@ class Sds011Actor(in: InputStream, listeners: Seq[ActorRef])(implicit ec: Execut
         }
       }
     }
-    readNext(in)
+    keepReading(in)
   }
 
+  private def average(ms: List[(Pm25Measurement, Pm10Measurement)]): (Pm25Measurement, Pm10Measurement) = {
+    val (pm25agg, pm10agg) = ms.foldRight((0,0))((nxt, agg) => (nxt._1.pm25 + agg._1, nxt._2.pm10 + agg._2))
+    (Pm25Measurement(ms.head._1.id, pm25agg / ms.size), Pm10Measurement(ms.head._2.id, pm10agg / ms.size))
+  }
 }

@@ -29,8 +29,8 @@ object Main extends App {
     log.info(s"Connecting to UART (Serial) device: $uartDevice")
 
     val targets: Seq[ActorRef] = Seq(
-      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf(_, "domoticz")),
-      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf(_, "luftdaten"))
+      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf(_)),
+      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf(_))
     ).collect { case Some(target) => target }
 
     val sourceType = config.getString("type")
@@ -40,7 +40,7 @@ object Main extends App {
     Serial.findPort(uartDevice) match {
       case Some(port) =>
         val source: Option[Props] = if (sourceType.equalsIgnoreCase("sds011")) {
-          Some(Sds011Actor.props(port.getInputStream, targets))
+          Some(Sds011Actor.props(port.getInputStream, config.as[Option[Int]]("interval").getOrElse(90), targets))
         } else if (sourceType.equalsIgnoreCase("mhz19")) {
           Some(Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets))
         } else {
@@ -61,7 +61,5 @@ object Main extends App {
     ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
   }
 
-
-  log.debug("debug")
   // system.terminate()
 }

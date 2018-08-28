@@ -4,8 +4,11 @@ This app periodically reads physically attached sensors (Serial/UART) and distri
 
 Currently supported sensors: 
 
-- SDS011
-- SDS021 (Deprecated! For indoor use only)
+- Particles
+  - SDS011
+  - SDS021 (Deprecated! For indoor use only)
+- CO2
+  - MH-Z19 (B)
 
 Currently supported external services:
 
@@ -151,7 +154,7 @@ Note the difference with the regular command to run the software tests
 ### Domoticz
 
 Domoticz is a system to automate your home. It supports a variety of protocols and devices, allowing you to control your home and respond to sensor values. 
-Domoticz also keeps track of historic readings, and presents them in diagrams. We can send our particulate measurements to Domoticz to track the trends over time.
+Domoticz also keeps track of historic readings, and presents them in diagrams. We can send our particle measurements to Domoticz to track the trends over time.
 
 In Domoticz -> Settings -> Hardware, add new Dummy hardware
 
@@ -163,14 +166,14 @@ You can add the new devices to the _Floor Plan_ if you have one, and drag them t
 
 ### Luftdaten
 
-[Luftdaten.info](http://luftdaten.info) is a Citizen Science project to collect as many particulate sensor data as possible, and show it on a map. 
+[Luftdaten.info](http://luftdaten.info) is a Citizen Science project to collect as many particle sensor data as possible, and show it on a map. 
 This project was specifically created with the idea in mind to make contribution as easy as possible. 
 If the sensor is _outside_ (nobody cares about your indoor readings), you may consider connecting to the luftdaten.info API. 
 Once you retrieved the machine ID of your sensor from the logging (or by running `fijnstof test`, something like _fijnstof-e123456e_). 
 Use that to register at the bottom of [their DIY page](https://luftdaten.info/en/construction-manual/). 
 After some time (days), you  will get a confirmation, and you will see the measurements on the map on your specified 
 location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), 
-but also anyone else interested in particulate rates in their area or anywhere else.
+but also anyone else interested in particle rates in their area or anywhere else.
 
 
 ## Notes on Mac
