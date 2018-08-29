@@ -1,18 +1,20 @@
-import Luftdaten.toJson
+package nl.kransen.fijnstof
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
-import net.ceedubs.ficus.Ficus._
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
 import io.circe.generic.auto._
 import io.circe.syntax._
+import net.ceedubs.ficus.Ficus._
+import nl.kransen.fijnstof.Luftdaten.toJson
+import org.slf4j.LoggerFactory
+
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class Luftdaten(luftdatenId: Option[String])(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer) extends Actor {
 

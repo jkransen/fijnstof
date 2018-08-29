@@ -1,4 +1,4 @@
-import java.io.{InputStream, OutputStream}
+package nl.kransen.fijnstof
 
 import org.slf4j.LoggerFactory
 import purejavacomm.{CommPortIdentifier, SerialPort}

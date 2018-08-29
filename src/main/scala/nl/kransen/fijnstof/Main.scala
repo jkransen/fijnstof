@@ -1,12 +1,14 @@
-import com.typesafe.config.{Config, ConfigFactory}
-import org.slf4j.LoggerFactory
+package nl.kransen.fijnstof
+
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
+import com.typesafe.config.{Config, ConfigFactory}
 import net.ceedubs.ficus.Ficus._
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.util.Try
 import scala.reflect.io.File
+import scala.util.Try
 
 object Main extends App {
 

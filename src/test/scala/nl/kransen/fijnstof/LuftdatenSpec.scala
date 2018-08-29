@@ -1,3 +1,5 @@
+package nl.kransen.fijnstof
+
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers._
 

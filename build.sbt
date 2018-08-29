@@ -1,10 +1,10 @@
 name := "fijnstof"
-version := "1.0"
+version := "1.1"
 organization := "nl.kransen"
 maintainer := "Jeroen Kransen <jeroen@kransen.nl>"
 packageSummary := "SDS021 sensor reader for Domoticz"
 packageDescription := """This software reads sensors and pushes readings to external services.
-  Supported sensors: SDS011, SDS021.
+  Supported sensors: SDS011, SDS021, MH-Z19(B).
   Supported services: Domoticz, Luftdaten."""
 scalaVersion := "2.12.6"
 

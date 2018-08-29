@@ -1,7 +1,9 @@
+package nl.kransen.fijnstof
+
 import java.io.{ByteArrayInputStream, InputStream}
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActors, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import javax.xml.bind.DatatypeConverter
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 

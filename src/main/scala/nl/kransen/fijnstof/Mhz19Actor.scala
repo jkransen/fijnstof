@@ -1,11 +1,13 @@
+package nl.kransen.fijnstof
+
 import java.io.{InputStream, OutputStream}
 
-import Mhz19Actor.Tick
 import akka.actor.{Actor, ActorRef, Props}
+import nl.kransen.fijnstof.Mhz19Actor.Tick
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 case class CO2Measurement(ppm: Int) {

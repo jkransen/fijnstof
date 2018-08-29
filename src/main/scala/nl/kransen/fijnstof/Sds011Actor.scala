@@ -1,13 +1,14 @@
+package nl.kransen.fijnstof
+
 import java.io.InputStream
 
-import Sds011Actor.Tick
 import akka.actor.{Actor, ActorRef, Props}
+import nl.kransen.fijnstof.Sds011Actor.{Tick, average}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import Sds011Actor._
 
 case class Pm25Measurement(id: Int, pm25: Int) {
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"

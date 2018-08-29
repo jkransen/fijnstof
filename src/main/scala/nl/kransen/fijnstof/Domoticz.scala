@@ -1,9 +1,11 @@
+package nl.kransen.fijnstof
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
 import net.ceedubs.ficus.Ficus._
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
