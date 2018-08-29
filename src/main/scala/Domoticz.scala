@@ -24,7 +24,7 @@ class Domoticz(host: String, port: Int, maybePm25Idx: Option[String], maybePm10I
         val response1Future = Http().singleRequest(HttpRequest(uri = get1))
         response1Future.onComplete {
           case Success(response) =>
-            log.debug(s"PM2.5 update for IDX $pm25Idx successful")
+            log.info(s"PM2.5 update for IDX $pm25Idx successful: ${pm25Measurement.pm25str} µg/m³")
             log.trace("Domoticz PM2.5 response: " + response.toString())
           case Failure(e) => log.error("Domoticz PM2.5 failed", e)
         }
@@ -42,7 +42,7 @@ class Domoticz(host: String, port: Int, maybePm25Idx: Option[String], maybePm10I
         val response2Future = Http().singleRequest(HttpRequest(uri = get1))
         response2Future.onComplete {
           case Success(response) =>
-            log.debug(s"PM10 update for IDX $pm10Idx successful")
+            log.info(s"PM10 update for IDX $pm10Idx successful: ${pm10Measurement.pm10str} µg/m³" )
             log.trace("Domoticz PM10 response: " + response.toString())
           case Failure(e) => log.error("Domoticz PM10 failed", e)
         }
@@ -60,7 +60,7 @@ class Domoticz(host: String, port: Int, maybePm25Idx: Option[String], maybePm10I
         val response2Future = Http().singleRequest(HttpRequest(uri = get1))
         response2Future.onComplete {
           case Success(response) =>
-            log.debug(s"CO2 update for IDX $co2Idx successful")
+            log.info(s"CO2 update for IDX $co2Idx successful: ${co2Measurement.str} ppm")
             log.trace("Domoticz CO2 response: " + response.toString())
           case Failure(e) => log.error("Domoticz CO2 failed", e)
         }

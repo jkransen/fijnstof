@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import Sds011Actor._
 
 case class Pm25Measurement(id: Int, pm25: Int) {
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
@@ -25,6 +26,11 @@ object Sds011Actor {
   case object Tick
 
   def props(in: InputStream, interval: Int, listeners: Seq[ActorRef])(implicit ec: ExecutionContext): Props = Props(new Sds011Actor(in, interval, listeners))
+
+  def average(ms: List[(Pm25Measurement, Pm10Measurement)]): (Pm25Measurement, Pm10Measurement) = {
+    val (pm25agg, pm10agg) = ms.foldRight((0,0))((nxt, agg) => (nxt._1.pm25 + agg._1, nxt._2.pm10 + agg._2))
+    (Pm25Measurement(ms.head._1.id, pm25agg / ms.size), Pm10Measurement(ms.head._2.id, pm10agg / ms.size))
+  }
 }
 
 class Sds011Actor(in: InputStream, interval: Int, listeners: Seq[ActorRef])(implicit ec: ExecutionContext) extends Actor {
@@ -50,12 +56,19 @@ class Sds011Actor(in: InputStream, interval: Int, listeners: Seq[ActorRef])(impl
   }
 
   override def preStart(): Unit = {
-    context.system.dispatcher.execute(() => keepReading(in))
+    context.system.dispatcher.execute(() => new Sds011Reader().keepReading(in, self ! (_, _)))
     context.system.scheduler.scheduleOnce(0 seconds, self, Tick)
   }
+}
+
+class Sds011Reader {
+
+  private val log = LoggerFactory.getLogger("Sds011Reader")
+
+  type MeasurementHandler = (Pm25Measurement, Pm10Measurement) => Unit
 
   @tailrec
-  private def keepReading(in: InputStream): Nothing = {
+  final def keepReading(in: InputStream, handle: MeasurementHandler): Nothing = {
     val b0: Int = in.read
     if (b0 == 0xaa) {
       val b1 = in.read
@@ -74,7 +87,7 @@ class Sds011Actor(in: InputStream, interval: Int, listeners: Seq[ActorRef])(impl
         if (b8 == expectedChecksum) {
           val b9 = in.read
           if (b9 == 0xab) {
-            self ! (Pm25Measurement(id, pm25), Pm10Measurement(id, pm10))
+            handle(Pm25Measurement(id, pm25), Pm10Measurement(id, pm10))
           } else {
             log.trace(s"Wrong tail: $b9")
           }
@@ -83,11 +96,7 @@ class Sds011Actor(in: InputStream, interval: Int, listeners: Seq[ActorRef])(impl
         }
       }
     }
-    keepReading(in)
+    keepReading(in, handle)
   }
 
-  private def average(ms: List[(Pm25Measurement, Pm10Measurement)]): (Pm25Measurement, Pm10Measurement) = {
-    val (pm25agg, pm10agg) = ms.foldRight((0,0))((nxt, agg) => (nxt._1.pm25 + agg._1, nxt._2.pm10 + agg._2))
-    (Pm25Measurement(ms.head._1.id, pm25agg / ms.size), Pm10Measurement(ms.head._2.id, pm10agg / ms.size))
-  }
 }
