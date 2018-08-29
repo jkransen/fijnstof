@@ -4,10 +4,10 @@ This app periodically reads physically attached sensors (Serial/UART) and distri
 
 Currently supported sensors: 
 
-- Particles
+- Particulates
   - SDS011
   - SDS021 (Deprecated! For indoor use only)
-- CO2
+- CO<sub>2</sub>
   - MH-Z19 (B)
 
 Currently supported external services:
@@ -17,7 +17,7 @@ Currently supported external services:
 
 ## Packaging
 
-_Skip this section if you have a _fijnstof_1.0_all.deb_ file ready to install._
+_Skip this section if you have a _fijnstof_1.1_all.deb_ file ready to install._
 
 Run this command to create a Debian package (.deb):
 
@@ -25,17 +25,17 @@ Run this command to create a Debian package (.deb):
     
 The result will be this file:   
 
-    target/fijnstof_1.0_all.deb
+    target/fijnstof_1.1_all.deb
     
     echo "deb http://kransen.nl/repo binary" > /etc/apt/sources.list.d/myrepo.list
     apt-get update
 
 ## Installation
 
-This package is targeted at the Raspberry Pi running Raspbian, but the software should run on any Linux with a sensor on a serial device, 
-probably even on a Mac, and maybe even under Windows (please let me know if you get this working!). The Debian package will
-mainly add startup on boot functionality, which will be harder to achieve otherwise.  
-
+This package is targeted at the Raspberry Pi running Raspbian, but the software runs without changes on any Linux or Mac 
+with a sensor on a serial device. It may even run under Windows, please let me know if you get this working! `sbt list` should list the
+ serial devices on Windows as well. 
+ 
 ### Raspberry Pi
 
 _Skip this section if you have a running Pi._
@@ -43,7 +43,7 @@ _Skip this section if you have a running Pi._
 Following is a step by step guide to install a Raspberry Pi with (a local build) of fijnstof running:
 
 - Download [the latest Raspbian](https://www.raspberrypi.org/downloads/raspbian/), and extract it to get the .img
-- `sudo fdisk -l` to determine the block device of your SD card (check size)
+- `sudo fdisk -l` to determine the block device of your SD card (compare sizes to what you inserted)
 - `sudo dd if=yourimage.img of=/dev/mmcwherever bs=8M`
 - `sync`
 - Eject and mount again on your running linux machine
@@ -92,15 +92,17 @@ Otherwise, just add the key:
 
 ### Debian package
     
+The Debian package will mainly add startup on boot functionality, which will be harder to achieve otherwise.  
+
 From your host computer, copy the Debian package, using the chosen hostname from above:
 
-    scp target/fijnstof_1.0_all.deb pi@fijnstof.local:
+    scp target/fijnstof_1.1_all.deb pi@fijnstof.local:
 
 Note the trailing colon above.
 
 On the Pi, install the package 
    
-    sudo dpkg -i fijnstof_1.0_all.deb
+    sudo dpkg -i fijnstof_1.1_all.deb
     
 The installation will add a fijnstof user and a start script that will launch at boot. 
 It should also add the fijnstof user to the group `dialout`, which is needed to gain access to the serial device. 
@@ -117,6 +119,8 @@ Take out the device, and see if it disappears from the list when running again. 
 Configuration is in:
 
     /etc/fijnstof/application.conf
+    
+It may be self-explanatory. If not, see the dedicated [configuration documentation](Configuration.md) for more extensive information.
     
 Set the serial device here. Enable blocks for Domoticz or Luftdaten, whichever you want to use. Make a test run:
 
@@ -178,6 +182,3 @@ but also anyone else interested in particle rates in their area or anywhere else
 
 ## Notes on Mac
 
-On Mac, the SDS011 / SDS021 sensors need an additional driver installed. 
-[After installation and reboot](https://kig.re/2014/12/31/how-to-use-arduino-nano-mini-pro-with-CH340G-on-mac-osx-yosemite.html), you can hopefully
-see an additional serial device, something like `tty.wchusbserialfd130` under `/dev`.
