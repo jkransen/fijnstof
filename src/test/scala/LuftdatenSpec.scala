@@ -5,7 +5,8 @@ class LuftdatenSpec extends FlatSpec {
 
   "Valid sds011 measurement" should "map to correct luftdaten json" in {
 
-    val validMeasurement = Sds011Measurement(id = 134, pm25 = 123, pm10 = 234)
+    val validPm25Measurement = Pm25Measurement(id = 134, pm25 = 123)
+    val validPm10Measurement = Pm10Measurement(id = 134, pm10 = 234)
 
     val expectedJson = s"""
                           |{
@@ -17,7 +18,7 @@ class LuftdatenSpec extends FlatSpec {
                           |}
        """.stripMargin.replaceAll("\\s", "").replace("fijnstof", "fijnstof ")
 
-    val actualJson = Luftdaten.toJson(validMeasurement)
+    val actualJson = Luftdaten.toJson(validPm25Measurement, validPm10Measurement)
 
     expectedJson should equal(actualJson)
   }

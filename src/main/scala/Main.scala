@@ -1,6 +1,6 @@
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import net.ceedubs.ficus.Ficus._
 
@@ -28,23 +28,26 @@ object Main extends App {
     val uartDevice = config.getString("device")
     log.info(s"Connecting to UART (Serial) device: $uartDevice")
 
-    val handlers = Seq(
-      config.as[Option[Config]]("domoticz").map(Domoticz(_)),
-      config.as[Option[Config]]("luftdaten").map(Luftdaten(_))
-    ).collect { case Some(handler) => handler }
+    val targets: Seq[ActorRef] = Seq(
+      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf(_)),
+      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf(_))
+    ).collect { case Some(target) => target }
 
-    def handleMeasurement(measurement: Measurement): Unit = {
-      log.debug(s"Measurement: ${measurement.toString}")
-      handlers.foreach(_.handle(measurement))
-    }
+    val sourceType = config.getString("type")
+    // val interval = config.as[Option[Int]]("interval").getOrElse(90)
+    // val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
 
-    val source = MeasurementSource(config.getString("type"))
-    val interval = config.as[Option[Int]]("interval").getOrElse(90)
-    val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
-
-    Serial.connect(uartDevice) match {
-      case Some(is) if isTest => source.stream(is).headOption.foreach(handleMeasurement)
-      case Some(is) => source.stream(is).sliding(batchSize, interval).map(_.toList).map(Sds011Measurement.average).foreach(handleMeasurement)
+    Serial.findPort(uartDevice) match {
+      case Some(port) =>
+        val source: Option[Props] = if (sourceType.equalsIgnoreCase("sds011")) {
+          Some(Sds011Actor.props(port.getInputStream, config.as[Option[Int]]("interval").getOrElse(90), targets))
+        } else if (sourceType.equalsIgnoreCase("mhz19")) {
+          Some(Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets))
+        } else {
+          log.error(s"Source type $sourceType unknown")
+          None
+        }
+        source.foreach(system.actorOf(_, s"${sourceType}_source"))
       case None => log.error("Serial device not found")
     }
   }
@@ -58,5 +61,5 @@ object Main extends App {
     ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
   }
 
-  system.terminate()
+  // system.terminate()
 }
