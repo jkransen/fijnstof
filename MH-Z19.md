@@ -1,6 +1,6 @@
 # MH-Z19
 
-See [doc](doc/MH-Z19%20CO2%20Ver1.0.pdf)
+See [datasheet](doc/MH-Z19%20CO2%20Ver1.0.pdf) for the original Winsen datasheet of the MH-Z19.
 
 The MH-Z19(B) sensor can be purchased online. It costs around €20, US$20. Note that it comes in slightly varying form factors. 
 If it comes with a pin header, or if you need to solder it yourself, then the labels on the board are obvious.

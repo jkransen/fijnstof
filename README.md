@@ -158,13 +158,18 @@ Note the difference with the regular command to run the software tests
 ### Domoticz
 
 Domoticz is a system to automate your home. It supports a variety of protocols and devices, allowing you to control your home and respond to sensor values. 
-Domoticz also keeps track of historic readings, and presents them in diagrams. We can send our particle measurements to Domoticz to track the trends over time.
+Domoticz also keeps track of historic readings, and presents them in diagrams. We can send our particulate measurements to Domoticz to track the trends over time.
 
 In Domoticz -> Settings -> Hardware, add new Dummy hardware
 
-On the Dummy hardware, create 2 virtual sensors, `PM2.5` and `PM10`. 
-Sensor type: _Custom sensor_. Enter (copy/paste) `µg/m³` for axis label. 
-Look up the assigned _IDX_ values under _Devices_ (order by IDX descending), and set them in the above configuration file.
+- For the SDS011
+  - On the Dummy hardware, create 2 virtual sensors, `PM2.5` and `PM10`. 
+  - Sensor type: _Custom sensor_. Enter (copy/paste) `µg/m³` for axis label. 
+- For the MH-Z19
+  - On the Dummy hardware, create 1 virtual sensor, `CO2`. 
+  - Sensor type: _Air quality_
+
+Look up the assigned _IDX_ values under _Devices_ (order by IDX descending), and set them in the [configuration file](Configuration.md).
 
 You can add the new devices to the _Floor Plan_ if you have one, and drag them to the correct physical place in the right room.
 
@@ -179,6 +184,4 @@ After some time (days), you  will get a confirmation, and you will see the measu
 location: [maps.luftdaten.info](http://maps.luftdaten.info) (slightly off, for privacy reasons), 
 but also anyone else interested in particle rates in their area or anywhere else.
 
-
-## Notes on Mac
 

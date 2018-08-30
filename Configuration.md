@@ -40,7 +40,7 @@ When connecting your sensor to the GPIO header's Rx/Tx pins ([pins 10 and 8 resp
 On Mac, the USB adapters that come with the SDS011 / SDS021 sensors need an additional driver installed. 
 [After installation and reboot](https://kig.re/2014/12/31/how-to-use-arduino-nano-mini-pro-with-CH340G-on-mac-osx-yosemite.html), you can hopefully
 see an additional serial device, something like `cu.wchusbserialfd130` under `/dev`.
-Using the specified driver, set the _device_ value to something like `cu.wchusbserialfa120` or `cu.wchusbserialfa130`, whatever showed up.
+Using the specified driver, set the _device_ value to  `cu.wchusbserialfa130` or `cu.wchusbserialfa120`, whatever showed up.
 
 On Windows, this would probably be something like `COM4`. 
 
@@ -58,7 +58,7 @@ Time interval is best effort, don't count on precision.
 See [Domoticz](./README.md#Domoticz) for configuration of Domoticz itself.
 
 - _host_, _port_  IP address or hostname and port of the running Domoticz installation
-- _pm25Idx_, _pm10Idx_, _co2Idx_ The Idx of the virtual sensors that you added in Domoticz
+- _pm25Idx_, _pm10Idx_, _co2Idx_ The IDX of the virtual sensors that you added in Domoticz
 
 ## luftdaten
 
