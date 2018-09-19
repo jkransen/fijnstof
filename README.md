@@ -6,7 +6,7 @@ Currently supported sensors:
 
 - Particulates
   - SDS011
-  - SDS021 (Deprecated! For indoor use only)
+  - SDS021 (Not recommended for outdoor use)
 - CO<sub>2</sub>
   - MH-Z19 (B)
 
