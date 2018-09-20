@@ -57,6 +57,9 @@ Following is a step by step guide to install a Raspberry Pi with (a local build)
     - No splash screen
     - Wifi country, SSID and password (if you don't want/have an ethernet cable available)
     - Locale, keyboard layout
+    - Interfaces -> Serial
+        - Disable terminal over serial
+        - Enable hardware device for serial
     - Expand filesystem, to take advantage of the entire SD card storage
     
 ### Optional: Add authorized SSH key

@@ -1,3 +1,6 @@
+enablePlugins(JavaServerAppPackaging)
+enablePlugins(SystemdPlugin)
+
 name := "fijnstof"
 version := "1.1"
 organization := "nl.kransen"
@@ -27,13 +30,9 @@ libraryDependencies ++= Seq(
   "org.scalamock"          %% "scalamock"         % "4.1.0"           % Test
 )
 
-enablePlugins(JavaServerAppPackaging)
-enablePlugins(SystemdPlugin)
-
-//debianPackageDependencies in Debian ++= Seq("java8-runtime")
-//debianPackageDependencies in Debian ++= Seq("oracle-java8-jdk")
-//openjdk-8-jre-headless
-
+javaOptions in Universal ++= Seq(
+  "-Dconfig.file=/usr/share/" + name.value + "/conf/application.conf"
+)
 // application.conf should not be packaged itself
 mappings in Universal := {
   (mappings in Universal).value filter {
@@ -52,3 +51,8 @@ daemonGroup in Linux := "dialout"
 
 // add jvm parameter for typesafe config
 bashScriptExtraDefines in Linux += """addJava "-Dconfig.file=${app_home}/../conf/application.conf""""
+
+debianPackageDependencies in Debian ++= Seq("java8-runtime-headless")
+//debianPackageDependencies in Debian ++= Seq("oracle-java8-jdk")
+//openjdk-8-jre-headless
+
