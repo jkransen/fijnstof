@@ -22,7 +22,7 @@ class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
       val validPayload = "aa c0 01 02 03 04 05 06 15 ab"
 
       val probe1 = TestProbe()
-      val actor = system.actorOf(Sds011Actor.props(validPayload, 1, Seq(testActor)))
+//      val actor = system.actorOf(Sds011Actor.props(validPayload, 1, Seq(testActor)))
 
       val reading25 = 2 * 256 + 1
       val reading10 = 4 * 256 + 3
@@ -39,7 +39,7 @@ class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
       val invalidReading = "aa c0 01 02 03 04 05 06 14 ab"
       val validReading = "aa c0 01 00 01 00 01 00 03 ab"
 
-      val actor = system.actorOf(Sds011Actor.props(invalidReading + validReading, 1, Seq(testActor)))
+//      val actor = system.actorOf(Sds011Actor.props(invalidReading + validReading, 1, Seq(testActor)))
 
       val expectedMeasurement = (Pm25Measurement(1, 1), Pm10Measurement(1, 1))
 
@@ -52,7 +52,7 @@ class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
       val invalidReading = "aa c0 01 02 03 04 05 06 14 ac"
       val validReading = "aa c0 01 00 01 00 01 00 03 ab"
 
-      val actor = system.actorOf(Sds011Actor.props(invalidReading + validReading, 1, Seq(testActor)))
+//      val actor = system.actorOf(Sds011Actor.props(invalidReading + validReading, 1, Seq(testActor)))
 
       val expectedMeasurement = (Pm25Measurement(1, 1), Pm10Measurement(1, 1))
 
@@ -65,7 +65,7 @@ class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
       val validPayload = "aa c0 01 02 03 aa c0 01 02 03 04 05 06 15 ab aa c0 01 02 03 04 05 06 15 ab"
       //                  ^- measurement ^- actual start of payload    ^- recover from here
 
-      val actor = system.actorOf(Sds011Actor.props(validPayload, 1, Seq(testActor)))
+//      val actor = system.actorOf(Sds011Actor.props(validPayload, 1, Seq(testActor)))
 
       val reading25 = 2 * 256 + 1
       val reading10 = 4 * 256 + 3
@@ -104,7 +104,7 @@ class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
 
     "fold to correct average value" in {
         val ms = (Pm25Measurement(1, 25), Pm10Measurement(1, 125)) :: (Pm25Measurement(1, 31), Pm10Measurement(1, 131)) :: (Pm25Measurement(1, 35), Pm10Measurement(1, 135)) :: Nil
-        val avg = Sds011Actor.average(ms)
+        val avg = Sds011Protocol.average(ms)
         avg._1.pm25 should equal(30)
         avg._2.pm10 should equal(130)
         avg._1.id should equal(1)

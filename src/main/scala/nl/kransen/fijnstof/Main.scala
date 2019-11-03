@@ -42,7 +42,8 @@ object Main extends App {
     Serial.findPort(uartDevice) match {
       case Some(port) =>
         val source: Option[Props] = if (sourceType.equalsIgnoreCase("sds011")) {
-          Some(Sds011Actor.props(port.getInputStream, config.as[Option[Int]]("interval").getOrElse(90), targets))
+          None
+          // Some(Sds011Actor.props(port.getInputStream, config.as[Option[Int]]("interval").getOrElse(90), targets))
         } else if (sourceType.equalsIgnoreCase("mhz19")) {
           Some(Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets))
         } else {
