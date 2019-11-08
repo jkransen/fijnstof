@@ -31,8 +31,8 @@ object Main extends App {
     log.info(s"Connecting to UART (Serial) device: $uartDevice")
 
     val targets: Seq[ActorRef] = Seq(
-      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf(_)),
-      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf(_))
+      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf),
+      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf)
     ).collect { case Some(target) => target }
 
     val sourceType = config.getString("type")

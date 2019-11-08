@@ -9,7 +9,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
+class Sds011Spec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   override def afterAll: Unit = {
@@ -104,13 +104,12 @@ class Sds011ActorSpec extends TestKit(ActorSystem("MySpec")) with ImplicitSender
 
     "fold to correct average value" in {
       val ms = (Pm25Measurement(1, 25), Pm10Measurement(1, 125)) :: (Pm25Measurement(1, 31), Pm10Measurement(1, 131)) :: (Pm25Measurement(1, 35), Pm10Measurement(1, 135)) :: Nil
-      val avg = Sds011Actor.average(ms)
+      val avg = Sds011Protocol.average(ms)
       avg._1.pm25 should equal(30)
       avg._2.pm10 should equal(130)
       avg._1.id should equal(1)
       avg._2.id should equal(1)
     }
-
   }
 
   implicit def hexToInputStream(str: String): InputStream = new ByteArrayInputStream(DatatypeConverter.parseHexBinary(str.replaceAll("\\s", "")))

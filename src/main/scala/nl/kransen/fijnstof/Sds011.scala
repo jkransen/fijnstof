@@ -1,9 +1,6 @@
 package nl.kransen.fijnstof
 
-import java.io.InputStream
-
 import org.slf4j.LoggerFactory
-
 
 case class Pm25Measurement(id: Int, pm25: Int) {
   val pm25str = s"${pm25 / 10}.${pm25 % 10}"
@@ -16,7 +13,6 @@ case class Pm10Measurement(id: Int, pm10: Int) {
 
   override def toString: String = s"Sds011 id=$id pm10=$pm10str"
 }
-
 
 import java.io.IOException
 
@@ -38,8 +34,9 @@ object Sds011Protocol extends zio.App {
 //    putStrLn("Bye")
 //    ZIO.succeed(state)
 //  }
-
-  private val sds = Serial.findPort("ttyUSB1").get
+us
+  
+  private val sds = Serial.findPort("TEST").get
 
   private val is = sds.getInputStream
 
@@ -58,7 +55,7 @@ object Sds011Protocol extends zio.App {
     _ <- programLoop
   } yield ()
 
-  override def run(args: List[String]) =
+  override def run(args: List[String]): ZIO[Console with Blocking, Nothing, Int] =
     programLoop.fold(_ => 1, _ => 0)
 
   def average(ms: List[(Pm25Measurement, Pm10Measurement)]): (Pm25Measurement, Pm10Measurement) = {
@@ -149,7 +146,6 @@ object Sds011Protocol extends zio.App {
   }
 
   case class CompleteMeasurement(pm25: Pm25Measurement, pm10: Pm10Measurement) extends State {
-    // Unused!
     def nextState(nextByte: Int): State = {
       log.error("Should not continue with completed measurement")
       Init
