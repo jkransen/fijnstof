@@ -14,6 +14,9 @@ scalaVersion := "2.12.6"
 val circeVersion = "0.9.3"
 
 libraryDependencies ++= Seq(
+  "co.fs2" %% "fs2-core" % "1.0.4",
+
+  "co.fs2" %% "fs2-io" % "1.0.4",
   "dev.zio"                %% "zio"               % "1.0.0-RC16",
   "org.typelevel"          %% "cats-core"         % "1.0.1",
   "com.github.purejavacomm" % "purejavacomm"      % "1.0.1.RELEASE",

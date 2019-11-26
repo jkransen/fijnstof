@@ -1,5 +1,6 @@
 package nl.kransen.fijnstof
 
+import cats.effect.{ExitCode, IO, IOApp}
 import org.slf4j.LoggerFactory
 
 case class Pm25Measurement(id: Int, pm25: Int) {
@@ -23,7 +24,7 @@ import zio.{DefaultRuntime, ZIO}
 import zio.blocking._
 import zio.console._
 
-object Sds011Protocol extends zio.App {
+object Sds011Protocol extends IOApp {
 
   private val log = LoggerFactory.getLogger("Sds011Protocol")
 
@@ -34,7 +35,7 @@ object Sds011Protocol extends zio.App {
 //    putStrLn("Bye")
 //    ZIO.succeed(state)
 //  }
-us
+
   
   private val sds = Serial.findPort("TEST").get
 
@@ -49,14 +50,17 @@ us
     endState   <- if (nextState.isInstanceOf[CompleteMeasurement]) ZIO.succeed(nextState) else measurementLoop(nextState)
   } yield endState.asInstanceOf[CompleteMeasurement]
 
-  val programLoop: ZIO[Console with Blocking, IOException, Unit] = for {
-    meas <- measurementLoop(Init)
-    _ <- putStrLn(s"Measurement PM2.5: ${meas.pm25.pm25str} PM10: ${meas.pm10.pm10str}")
-    _ <- programLoop
-  } yield ()
+//  val programLoop: ZIO[Console with Blocking, IOException, Unit] = for {
+//    meas <- measurementLoop(Init)
+//    _ <- putStrLn(s"Measurement PM2.5: ${meas.pm25.pm25str} PM10: ${meas.pm10.pm10str}")
+//    _ <- programLoop
+//  } yield ()
 
-  override def run(args: List[String]): ZIO[Console with Blocking, Nothing, Int] =
-    programLoop.fold(_ => 1, _ => 0)
+//  override def run(args: List[String]): ZIO[Console with Blocking, Nothing, Int] =
+//    programLoop.fold(_ => 1, _ => 0)
+
+  def run(args: List[String]): IO[ExitCode] = ???
+//    converter.compile.drain.as(ExitCode.Success)
 
   def average(ms: List[(Pm25Measurement, Pm10Measurement)]): (Pm25Measurement, Pm10Measurement) = {
     val (pm25agg, pm10agg) = ms.foldRight((0,0))((nxt, agg) => (nxt._1.pm25 + agg._1, nxt._2.pm10 + agg._2))

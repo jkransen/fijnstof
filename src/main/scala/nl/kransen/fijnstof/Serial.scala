@@ -2,6 +2,7 @@ package nl.kransen.fijnstof
 
 import java.io.{InputStream, PipedInputStream, PipedOutputStream}
 
+import javax.xml.bind.DatatypeConverter
 import org.slf4j.LoggerFactory
 import purejavacomm.{CommPortIdentifier, SerialPort, SerialPortEventListener}
 
@@ -40,13 +41,13 @@ class TestSerialPort extends SerialPort {
   val ex = new ScheduledThreadPoolExecutor(1)
 
   def getInputStream: InputStream = {
-    val validPayload: Array[Byte] = Array(170, 192, 1, 2, 3, 4, 5, 6, 21, 171).map(_.toByte)
+    //                                    aa   c0 01 02 03 04 05 06  15   ab
+    val validPayload: Array[Int] = Array(170, 192, 1, 2, 3, 4, 5, 6, 21, 171)
     val pos = new PipedOutputStream()
     val task = new Runnable {
-      def run(): Unit = pos.write(validPayload)
+      def run(): Unit = validPayload.foreach(pos.write)
     }
     val f = ex.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
-    // f.cancel(false)
     new PipedInputStream(pos)
   }
 
