@@ -22,7 +22,7 @@ object Fs2Sds011 extends App {
     val sds = Serial.findPort("TEST").get
     val program = for {
       _ <- console.putStrLn("Starting")
-      converter <- ZIO.runtime[AppEnv].map { implicit rts =>
+      converter <- ZIO.runtime[AppEnv].flatMap { implicit rts =>
         val is = ZIO.effect(sds.getInputStream)
         io.readInputStream(is, 1, rts.Platform.executor.asEC)
           .map(_.toInt & 0xff)
