@@ -17,7 +17,7 @@ libraryDependencies ++= Seq(
   "co.fs2" %% "fs2-core" % "1.0.4",
 
   "co.fs2" %% "fs2-io" % "1.0.4",
-  "dev.zio"                %% "zio"               % "1.0.0-RC16",
+  "dev.zio"                %% "zio-interop-cats"  % "1.3.1.0-RC3",
   "org.typelevel"          %% "cats-core"         % "1.0.1",
   "com.github.purejavacomm" % "purejavacomm"      % "1.0.1.RELEASE",
   "org.slf4j"               % "slf4j-simple"      % "1.7.25",
