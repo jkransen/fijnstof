@@ -1,78 +1,71 @@
 package nl.kransen.fijnstof
 
-import cats.effect.{ExitCode, IO, IOApp}
+import java.util.concurrent.Executors
+
+import fs2._
 import org.slf4j.LoggerFactory
+import zio.{Task, ZIO}
+import cats.implicits._
+import nl.kransen.fijnstof.Main.AppTypes.Measurement
+import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
+import purejavacomm.SerialPort
+import zio.interop.catz._
 
-case class Pm25Measurement(id: Int, pm25: Int) {
-  val pm25str = s"${pm25 / 10}.${pm25 % 10}"
+import scala.concurrent.ExecutionContext
 
-  override def toString: String = s"Sds011 id=$id pm2.5=$pm25str"
+object Sds011 {
+
+  val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+
+  def apply(sds: SerialPort, interval: Int): Task[Stream[SdsMeasurement]] = {
+    for {
+      _ <- console.putStrLn("Starting SDS011")
+      is <- ZIO.effect(sds.getInputStream)
+      stream <- io.readInputStream(is, 1, ec)
+          .map(_.toInt & 0xff)
+          .through(SdsStateMachine.collectMeasurements())
+    } yield stream
+  }
 }
 
-case class Pm10Measurement(id: Int, pm10: Int) {
-  val pm10str = s"${pm10 / 10}.${pm10 % 10}"
+object SdsStateMachine {
 
-  override def toString: String = s"Sds011 id=$id pm10=$pm10str"
-}
+  private val log = LoggerFactory.getLogger("SDS011")
 
-import java.io.IOException
+  def collectMeasurements[F[_]](): Pipe[F, Int, SdsMeasurement] = {
 
-import zio.console.Console
-import zio.{DefaultRuntime, ZIO}
+    def go(state: SdsState): Stream[F, Int] => Pull[F, SdsMeasurement, Unit] =
+      _.pull.uncons1.flatMap {
+        case Some((nextByte: Int, tail)) =>
+          val nextState = state.nextState(nextByte)
+          log.debug(f"Next byte: ${nextByte}%02x, next state: $nextState")
+          nextState match {
+            case CompleteMeasurement(measurement) =>
+              Pull.output1(measurement) >> go(nextState)(tail)
+            case _ =>
+              go(nextState)(tail)
+          }
+        case None =>
+          Pull.done
+      }
 
-
-import zio.blocking._
-import zio.console._
-
-object Sds011Protocol extends IOApp {
-
-  private val log = LoggerFactory.getLogger("Sds011Protocol")
-
-  private val ports = Serial.listPorts.map(_.getName)
-  println(ports.mkString(" "))
-
-//  def renderState(state: State): ZIO[Console with Blocking, IOException, State] = {
-//    putStrLn("Bye")
-//    ZIO.succeed(state)
-//  }
-
-  
-  private val sds = Serial.findPort("TEST").get
-
-  private val is = sds.getInputStream
-
-  private val readByte = effectBlocking(is.read()).refineToOrDie[IOException]
-
-  def measurementLoop(state: State): ZIO[Console with Blocking, IOException, CompleteMeasurement] = for {
-    byte       <- readByte
-    _          <- putStr( s"${byte.toHexString} ")
-    nextState  <- ZIO.succeed(state.nextState(byte))
-    endState   <- if (nextState.isInstanceOf[CompleteMeasurement]) ZIO.succeed(nextState) else measurementLoop(nextState)
-  } yield endState.asInstanceOf[CompleteMeasurement]
-
-//  val programLoop: ZIO[Console with Blocking, IOException, Unit] = for {
-//    meas <- measurementLoop(Init)
-//    _ <- putStrLn(s"Measurement PM2.5: ${meas.pm25.pm25str} PM10: ${meas.pm10.pm10str}")
-//    _ <- programLoop
-//  } yield ()
-
-//  override def run(args: List[String]): ZIO[Console with Blocking, Nothing, Int] =
-//    programLoop.fold(_ => 1, _ => 0)
-
-  def run(args: List[String]): IO[ExitCode] = ???
-//    converter.compile.drain.as(ExitCode.Success)
-
-  def average(ms: List[(Pm25Measurement, Pm10Measurement)]): (Pm25Measurement, Pm10Measurement) = {
-    val (pm25agg, pm10agg) = ms.foldRight((0,0))((nxt, agg) => (nxt._1.pm25 + agg._1, nxt._2.pm10 + agg._2))
-    (Pm25Measurement(ms.head._1.id, pm25agg / ms.size), Pm10Measurement(ms.head._2.id, pm10agg / ms.size))
+    go(Init)(_).stream
   }
 
-  sealed trait State {
-    def nextState(nextByte: Int): State
+  case class SdsMeasurement(id: Int, pm25: Int, pm10: Int) extends Measurement {
+    val pm25str = s"${pm25 / 10}.${pm25 % 10}"
+    val pm10str = s"${pm10 / 10}.${pm10 % 10}"
+
+    override def toString: String =
+      s"Sds011 id=$id pm2.5=$pm25str pm10=$pm10str"
   }
 
-  case object Init extends State {
-    def nextState(nextByte: Int): State = {
+  sealed trait SdsState {
+    def nextState(nextByte: Int): SdsState
+  }
+
+  case object Init extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       if (nextByte == 0xaa) {
         Head
       } else {
@@ -81,8 +74,8 @@ object Sds011Protocol extends IOApp {
     }
   }
 
-  case object Head extends State {
-    def nextState(nextByte: Int): State = {
+  case object Head extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       if (nextByte == 0xc0) {
         PM25Low
       } else {
@@ -91,67 +84,70 @@ object Sds011Protocol extends IOApp {
     }
   }
 
-  case object PM25Low extends State {
-    def nextState(nextByte: Int): State = {
+  case object PM25Low extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       PM25High(nextByte)
     }
   }
 
-  case class PM25High(pm25Value: Int) extends State {
-    def nextState(nextByte: Int): State = {
+  case class PM25High(pm25Value: Int) extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       PM10Low(pm25Value + nextByte * 256, pm25Value + nextByte)
     }
   }
 
-  case class PM10Low(pm25Value: Int, checksum: Int) extends State {
-    def nextState(nextByte: Int): State = {
+  case class PM10Low(pm25Value: Int, checksum: Int) extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       PM10High(pm25Value, nextByte, checksum + nextByte)
     }
   }
 
-  case class PM10High(pm25Value: Int, pm10Value: Int, checksum: Int) extends State {
-    def nextState(nextByte: Int): State = {
+  case class PM10High(pm25Value: Int, pm10Value: Int, checksum: Int)
+      extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       IdLow(pm25Value, pm10Value + nextByte * 256, checksum + nextByte)
     }
   }
 
-  case class IdLow(pm25Value: Int, pm10Value: Int, checksum: Int) extends State {
-    def nextState(nextByte: Int): State = {
+  case class IdLow(pm25Value: Int, pm10Value: Int, checksum: Int)
+      extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       IdHigh(pm25Value, pm10Value, nextByte, checksum + nextByte)
     }
   }
 
-  case class IdHigh(pm25Value: Int, pm10Value: Int, idValue: Int, checksum: Int) extends State {
-    def nextState(nextByte: Int): State = {
-      Checksum(pm25Value, pm10Value, idValue + nextByte * 256, checksum + nextByte)
+  case class IdHigh(pm25Value: Int, pm10Value: Int, idValue: Int, checksum: Int)
+      extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
+      Checksum(
+        pm25Value,
+        pm10Value,
+        idValue + nextByte * 256,
+        checksum + nextByte
+      )
     }
   }
 
-  case class Checksum(pm25Value: Int, pm10Value: Int, idValue: Int, checksum: Int) extends State {
-    def nextState(nextByte: Int): State = {
+  case class Checksum(pm25Value: Int,
+                      pm10Value: Int,
+                      idValue: Int,
+                      checksum: Int)
+      extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
       if (nextByte == (checksum & 0xff)) {
-        Tail(pm25Value, pm10Value, idValue)
+        CompleteMeasurement(SdsMeasurement(idValue, pm25Value, pm10Value))
       } else {
-        log.error("Checksum mismatch")
+        log.error(s"Checksum mismatch, expected=$checksum actual=$nextByte")
         Init
       }
     }
   }
 
-  case class Tail(pm25Value: Int, pm10Value: Int, idValue: Int) extends State {
-    def nextState(nextByte: Int): State = {
-      if (nextByte == 0xab) {
-        CompleteMeasurement(Pm25Measurement(idValue, pm25Value), Pm10Measurement(idValue, pm10Value))
-      } else {
-        log.error("Unexpected tail")
-        Init
+  case class CompleteMeasurement(measurement: SdsMeasurement) extends SdsState {
+    def nextState(nextByte: Int): SdsState = {
+      if (nextByte != 0xab) {
+        log.error(s"Unexpected tail: $nextByte")
       }
-    }
-  }
-
-  case class CompleteMeasurement(pm25: Pm25Measurement, pm10: Pm10Measurement) extends State {
-    def nextState(nextByte: Int): State = {
-      log.error("Should not continue with completed measurement")
       Init
     }
   }

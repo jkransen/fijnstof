@@ -1,27 +1,21 @@
 package nl.kransen.fijnstof
 
-import java.io.{InputStream, PipedInputStream, PipedOutputStream}
+import java.io.{IOException, InputStream, PipedInputStream, PipedOutputStream}
 
-import javax.xml.bind.DatatypeConverter
-import org.slf4j.LoggerFactory
 import purejavacomm.{CommPortIdentifier, SerialPort, SerialPortEventListener}
+import zio.{Task, ZIO}
 
 import scala.collection.JavaConverters._
 
 object Serial {
 
-  private val log = LoggerFactory.getLogger("Serial")
-
-  def findPort(portName: String): Option[SerialPort] = {
+  def findPort(portName: String): Task[SerialPort] = {
     if ("TEST".equals(portName)) {
-      Some(new TestSerialPort())
+      Task(new TestSerialPort())
     } else {
-      val portOption = listPorts.find(_.getName.equalsIgnoreCase(portName))
-      portOption match {
-        case Some(port) => log.info(s"Serial port found: $portName")
-        case None => log.error(s"Serial port $portName not found")
-      }
-      portOption map openPort
+      ZIO.fromOption(listPorts.find(_.getName.equalsIgnoreCase(portName)))
+        .mapError(_ => new IOException("s\"Serial port $portName not found\""))
+        .flatMap(port => Task(openPort(port)))
     }
   }
 

@@ -1,27 +1,38 @@
 package nl.kransen.fijnstof
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.stream.ActorMaterializer
-import com.typesafe.config.{Config, ConfigFactory}
-import net.ceedubs.ficus.Ficus._
-import org.slf4j.LoggerFactory
+import java.io.IOException
 
-import scala.concurrent.ExecutionContextExecutor
-import scala.reflect.io.File
+import com.typesafe.config.{Config, ConfigFactory}
+import fs2.Stream
+import net.ceedubs.ficus.Ficus._
+import nl.kransen.fijnstof.Main.AppTypes.MeasurementTarget
+import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
+import org.slf4j.LoggerFactory
+import purejavacomm.SerialPort
+
 import scala.util.Try
+import zio._
+import zio.blocking.Blocking
+import zio.clock.Clock
+import zio.console._
+
+import scala.io.Source.fromFile
 
 object Main extends App {
 
-  private val log = LoggerFactory.getLogger("Main")
+  object AppTypes {
+    type AppEnv = Clock with Blocking with Console
+    type Measurement
+    type MeasurementSource
+    type MeasurementTarget
+  }
 
-  implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  private val log = LoggerFactory.getLogger("Main")
 
   lazy val machineId: Option[String] = {
     val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
     for {
-      cpuinfo <- Try(File("/proc/cpuinfo").slurp()).toOption
+      cpuinfo <- Try(fromFile("/proc/cpuinfo").mkString).toOption
       firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
     } yield "fijnstof-" + firstMatch.group(1)
   }
@@ -30,39 +41,37 @@ object Main extends App {
     val uartDevice = config.getString("device")
     log.info(s"Connecting to UART (Serial) device: $uartDevice")
 
-    val targets: Seq[ActorRef] = Seq(
-      config.as[Option[Config]]("domoticz").map(config => Domoticz.props(config)).map(system.actorOf),
-      config.as[Option[Config]]("luftdaten").map(config => Luftdaten.props(config)).map(system.actorOf)
+    val targets: Seq[MeasurementTarget] = Seq(
+      config.as[Option[Config]]("domoticz").map(config => Domoticz(config)),
+      config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
 
     val sourceType = config.getString("type")
-    // val interval = config.as[Option[Int]]("interval").getOrElse(90)
+    val interval = config.as[Option[Int]]("interval").getOrElse(90)
     // val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
 
-    Serial.findPort(uartDevice) match {
-      case Some(port) =>
-        val source: Option[Props] = if (sourceType.equalsIgnoreCase("sds011")) {
-          None
-          // Some(Sds011Actor.props(port.getInputStream, config.as[Option[Int]]("interval").getOrElse(90), targets))
-        } else if (sourceType.equalsIgnoreCase("mhz19")) {
-          Some(Mhz19Actor.props(port.getInputStream, port.getOutputStream, targets))
-        } else {
-          log.error(s"Source type $sourceType unknown")
-          None
-        }
-        source.foreach(system.actorOf(_, s"${sourceType}_source"))
-      case None => log.error("Serial device not found")
+    for {
+      port <- Serial.findPort(uartDevice)
+      source <- getSource(port)
+    } yield port
+
+    def getSource(port: SerialPort): Task[Stream[SdsMeasurement]] = sourceType.toLowerCase match {
+      case "sds011" => Sds011(port, interval)
+      case "mhz19" => Mhz19(port, interval)
+      case _ => Task.fail(new IOException(s"Source type $sourceType unknown"))
     }
   }
 
-  log.info(s"Starting fijnstof, machine id: $machineId")
-
-  if (args.contains("list")) {
-    Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
-  } else {
-    val isTest = args.contains("test")
-    ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
+  def myAppLogic(args: List[String]) = {
+    log.info(s"Starting fijnstof, machine id: $machineId")
+    if (args.contains("list")) {
+      Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
+    } else {
+      val isTest = args.contains("test")
+      ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
+    }
   }
 
-  // system.terminate()
+  def run(args: List[String]) =
+    myAppLogic(args).fold(_ => 1, _ => 0)
 }
