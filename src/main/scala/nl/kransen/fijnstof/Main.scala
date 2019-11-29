@@ -1,6 +1,7 @@
 package nl.kransen.fijnstof
 
 import java.io.IOException
+import java.util.concurrent.{Executors, ScheduledThreadPoolExecutor}
 
 import com.typesafe.config.{Config, ConfigFactory}
 import fs2.Stream
@@ -16,6 +17,7 @@ import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.console._
 
+import scala.concurrent.ExecutionContext
 import scala.io.Source.fromFile
 
 object Main extends App {
@@ -28,6 +30,9 @@ object Main extends App {
   }
 
   private val log = LoggerFactory.getLogger("Main")
+
+  implicit val ex: ScheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1)
+  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
   lazy val machineId: Option[String] = {
     val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r

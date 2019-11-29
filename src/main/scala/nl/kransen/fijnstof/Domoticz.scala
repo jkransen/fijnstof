@@ -7,8 +7,6 @@ import nl.kransen.fijnstof.Main.AppTypes.MeasurementTarget
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
 
-import scala.util.{Failure, Success}
-
 class Domoticz private(host: String, port: Int, maybePm25Idx: Option[String], maybePm10Idx: Option[String], maybeCo2Idx: Option[String]) extends MeasurementTarget {
 
   private val log = LoggerFactory.getLogger("Domoticz")

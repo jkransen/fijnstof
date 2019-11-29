@@ -38,10 +38,6 @@ class Luftdaten(luftdatenId: Option[String]) extends MeasurementTarget {
       log.error("Luftdaten failed: ${response.statusText}")
     }
   }
-
-  def receive: Unit = {
-    case pmMeasurement: SdsMeasurement => save(pmMeasurement)
-  }
 }
 
 object Luftdaten {

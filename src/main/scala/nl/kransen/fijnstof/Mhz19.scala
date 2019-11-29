@@ -1,6 +1,6 @@
 package nl.kransen.fijnstof
 
-import java.util.concurrent.{Executors, ScheduledThreadPoolExecutor, TimeUnit}
+import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
 import fs2.{Pipe, Pull, Stream, io}
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
@@ -25,12 +25,9 @@ object CO2Measurement {
 object Mhz19 {
   private val log = LoggerFactory.getLogger("MH-Z19")
 
-  val ex: ScheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1)
-  val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  def apply(sds: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor): Task[Stream[SdsMeasurement]] = {
 
-  def apply(sds: SerialPort, interval: Int): Task[Stream[SdsMeasurement]] = {
-
-    val sendReadCommand = new Runnable {
+    val sendReadCommand: Runnable = new Runnable {
       val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79)
       def run(): Unit = {
         val out = sds.getOutputStream
@@ -40,8 +37,8 @@ object Mhz19 {
     ex.scheduleAtFixedRate(sendReadCommand, 1, 1, TimeUnit.SECONDS)
 
     for {
-      _ <- console.putStrLn("Starting SDS011")
-      is <- ZIO.effect(sds.getInputStream)
+      _      <- console.putStrLn("Starting SDS011")
+      is     <- ZIO.effect(sds.getInputStream)
       stream <- io.readInputStream(is, 1, ec)
         .map(_.toInt & 0xff)
         .through(SdsStateMachine.collectMeasurements())
@@ -59,7 +56,7 @@ object Mhz19StateMachine {
       _.pull.uncons1.flatMap {
         case Some((nextByte: Int, tail)) =>
           val nextState = state.nextState(nextByte)
-          log.debug(f"Next byte: ${nextByte}%02x, next state: $nextState")
+          log.trace(f"Next byte: ${nextByte}%02x, next state: $nextState")
           nextState match {
             case CompleteMeasurement(measurement) =>
               Pull.output1(measurement) >> go(nextState)(tail)
