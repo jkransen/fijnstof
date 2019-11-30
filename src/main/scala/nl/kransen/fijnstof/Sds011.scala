@@ -6,9 +6,15 @@ import fs2._
 import org.slf4j.LoggerFactory
 import zio.{Task, ZIO}
 import cats.implicits._
-import nl.kransen.fijnstof.Main.AppTypes.Measurement
+import cats.instances.stream
+import nl.kransen.fijnstof.Main.AppTypes.{AppEnv, Measurement}
+import nl.kransen.fijnstof.Sds011.SdsStateMachine.SdsMeasurement
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import purejavacomm.SerialPort
+import fs2._
+import org.slf4j.LoggerFactory
+import zio.{App, TaskR, ZIO}
+import cats.implicits._
 import zio.interop.catz._
 
 import scala.concurrent.ExecutionContext
@@ -17,14 +23,12 @@ object Sds011 {
 
   val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
-  def apply(sds: SerialPort, interval: Int): Task[Stream[SdsMeasurement]] = {
-    for {
-      _ <- console.putStrLn("Starting SDS011")
-      is <- ZIO.effect(sds.getInputStream)
-      stream <- io.readInputStream(is, 1, ec)
-          .map(_.toInt & 0xff)
-          .through(SdsStateMachine.collectMeasurements())
-    } yield stream
+  def apply(sds: SerialPort, interval: Int): Stream[Task, SdsMeasurement] = ZIO.runtime[AppEnv].flatMap { implicit rts => {
+    val is = ZIO(sds.getInputStream)
+    io.readInputStream(is, 1, rts.Platform.executor.asEC)
+      .map(_.toInt & 0xff)
+      .through(SdsStateMachine.collectMeasurements())
+    }
   }
 }
 

@@ -58,7 +58,7 @@ object Main extends App {
     for {
       port <- Serial.findPort(uartDevice)
       source <- getSource(port)
-    } yield port
+    } yield source
 
     def getSource(port: SerialPort): Task[Stream[SdsMeasurement]] = sourceType.toLowerCase match {
       case "sds011" => Sds011(port, interval)
@@ -67,13 +67,14 @@ object Main extends App {
     }
   }
 
-  def myAppLogic(args: List[String]) = {
+  def myAppLogic(args: List[String]): Task[Unit] = {
     log.info(s"Starting fijnstof, machine id: $machineId")
     if (args.contains("list")) {
-      Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}"))
+      ZIO.effect(Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}")))
     } else {
       val isTest = args.contains("test")
-      ConfigFactory.load().getConfigList("devices").forEach(runFlow(isTest))
+      ZIO.effect(ConfigFactory.load().getConfigList("devices"))
+        .flatMap(  (runFlow(isTest)))
     }
   }
 
