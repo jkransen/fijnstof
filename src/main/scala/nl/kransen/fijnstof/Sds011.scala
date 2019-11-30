@@ -1,34 +1,27 @@
 package nl.kransen.fijnstof
 
-import java.util.concurrent.Executors
-
-import fs2._
-import org.slf4j.LoggerFactory
-import zio.{Task, ZIO}
-import cats.implicits._
-import cats.instances.stream
+import zio._
 import nl.kransen.fijnstof.Main.AppTypes.{AppEnv, Measurement}
-import nl.kransen.fijnstof.Sds011.SdsStateMachine.SdsMeasurement
-import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import purejavacomm.SerialPort
 import fs2._
+import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
-import zio.{App, TaskR, ZIO}
-import cats.implicits._
-import zio.interop.catz._
 
-import scala.concurrent.ExecutionContext
 
 object Sds011 {
 
-  val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  import nl.kransen.fijnstof.Main.AppTypes._
 
-  def apply(sds: SerialPort, interval: Int): Stream[Task, SdsMeasurement] = ZIO.runtime[AppEnv].flatMap { implicit rts => {
-    val is = ZIO(sds.getInputStream)
-    io.readInputStream(is, 1, rts.Platform.executor.asEC)
-      .map(_.toInt & 0xff)
-      .through(SdsStateMachine.collectMeasurements())
-    }
+  def apply[AppEnv](sds: SerialPort, interval: Int): ZIO[AppEnv, Throwable, Stream[Task, SdsMeasurement]] = {
+    for {
+      _ <- console.putStrLn("Starting")
+      converter <- ZIO.runtime[AppEnv].flatMap { implicit rts =>
+        val is = ZIO.effect(sds.getInputStream)
+        ZIO.effect(io.readInputStream(is, 1, rts.Platform.executor.asEC)
+          .map(_.toInt & 0xff)
+          .through(SdsStateMachine.collectMeasurements()))
+      }
+    } yield converter
   }
 }
 
