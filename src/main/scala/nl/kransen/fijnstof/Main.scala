@@ -60,7 +60,7 @@ object Main extends App {
       source <- getSource(port)
     } yield source
 
-    def getSource(port: SerialPort): Task[Stream[SdsMeasurement]] = sourceType.toLowerCase match {
+    def getSource(port: SerialPort) = sourceType.toLowerCase match {
       case "sds011" => Sds011(port, interval)
       case "mhz19" => Mhz19(port, interval)
       case _ => Task.fail(new IOException(s"Source type $sourceType unknown"))
