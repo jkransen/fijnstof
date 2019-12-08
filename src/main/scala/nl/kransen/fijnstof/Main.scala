@@ -3,36 +3,40 @@ package nl.kransen.fijnstof
 import java.io.IOException
 import java.util.concurrent.{Executors, ScheduledThreadPoolExecutor}
 
+import cats._
+import cats.effect._
+import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import fs2.Stream
 import net.ceedubs.ficus.Ficus._
-import nl.kransen.fijnstof.Main.AppTypes.MeasurementTarget
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
 
 import scala.util.Try
-import zio._
-import zio.blocking.Blocking
-import zio.clock.Clock
-import zio.console._
-
 import scala.concurrent.ExecutionContext
 import scala.io.Source.fromFile
+import scala.collection.JavaConverters._
 
-object Main extends App {
+object Main extends IOApp {
+
+  import AppTypes._
 
   object AppTypes {
-    type AppEnv = Clock with Blocking with Console
-    type Measurement
+    trait Measurement
+
     type MeasurementSource
-    type MeasurementTarget
+
+    trait MeasurementTarget {
+      def save(measurement: Measurement)
+    }
   }
 
   private val log = LoggerFactory.getLogger("Main")
 
   implicit val ex: ScheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1)
-  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+  implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
   lazy val machineId: Option[String] = {
     val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
@@ -42,42 +46,45 @@ object Main extends App {
     } yield "fijnstof-" + firstMatch.group(1)
   }
 
-  def runFlow(isTest: Boolean)(config: Config): Unit = {
+  def runFlow(isTest: Boolean)(config: Config): IO[Unit] = {
     val uartDevice = config.getString("device")
-    log.info(s"Connecting to UART (Serial) device: $uartDevice")
+    val sourceType = config.getString("type")
+    val interval = config.as[Option[Int]]("interval").getOrElse(90)
+    val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
+    log.info(s"Connecting to UART (Serial) device: $uartDevice type=$sourceType interval=$interval")
+
+    def getSource(port: SerialPort): Stream[IO, SdsMeasurement] = sourceType.toLowerCase match {
+      case "sds011" => Sds011(port, interval)
+      case "mhz19" => Mhz19(port, interval)
+      // case _ => Stream.raiseError(new IOException(s"Source type $sourceType unknown"))
+    }
 
     val targets: Seq[MeasurementTarget] = Seq(
       config.as[Option[Config]]("domoticz").map(config => Domoticz(config)),
       config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
 
-    val sourceType = config.getString("type")
-    val interval = config.as[Option[Int]]("interval").getOrElse(90)
-    // val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
-
-    for {
-      port <- Serial.findPort(uartDevice)
+    val source: Stream[IO, SdsMeasurement] = for {
+      port <- Stream.eval(Serial.findPort(uartDevice))
       source <- getSource(port)
     } yield source
 
-    def getSource(port: SerialPort) = sourceType.toLowerCase match {
-      case "sds011" => Sds011(port, interval)
-      case "mhz19" => Mhz19(port, interval)
-      case _ => Task.fail(new IOException(s"Source type $sourceType unknown"))
-    }
+    source.compile.drain // .scan(meas => targets.foreach(target => target.save(meas)))
   }
 
-  def myAppLogic(args: List[String]): Task[Unit] = {
+  override def run(args: List[String]): IO[ExitCode] = {
     log.info(s"Starting fijnstof, machine id: $machineId")
     if (args.contains("list")) {
-      ZIO.effect(Serial.listPorts.foreach(port => log.info(s"Serial port: ${port.getName}")))
+      for {
+        ports <- Serial.listPorts
+        _ <- IO(ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}"))))
+      } yield ExitCode.Success
     } else {
       val isTest = args.contains("test")
-      ZIO.effect(ConfigFactory.load().getConfigList("devices"))
-        .flatMap(  (runFlow(isTest)))
+      for {
+        configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
+        _ <- IO(configs.traverse(runFlow(isTest)))
+      } yield ExitCode.Success
     }
   }
-
-  def run(args: List[String]) =
-    myAppLogic(args).fold(_ => 1, _ => 0)
 }

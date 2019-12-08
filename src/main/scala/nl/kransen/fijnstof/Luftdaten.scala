@@ -5,18 +5,17 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import net.ceedubs.ficus.Ficus._
 import nl.kransen.fijnstof.Luftdaten.toJson
+import nl.kransen.fijnstof.Main.AppTypes
 import nl.kransen.fijnstof.Main.AppTypes.MeasurementTarget
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
-import sttp.client.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.client._
-import zio.Task
 
-class Luftdaten(luftdatenId: Option[String]) extends MeasurementTarget {
+class Luftdaten private (luftdatenId: Option[String]) extends MeasurementTarget {
 
   private val log = LoggerFactory.getLogger("Luftdaten")
 
-  implicit val backend = HttpURLConnectionBackend() // AsyncHttpClientZioBackend()
+  implicit val backend = HttpURLConnectionBackend()
 
   log.info(s"Luftdaten ID: $luftdatenId")
 
@@ -38,6 +37,8 @@ class Luftdaten(luftdatenId: Option[String]) extends MeasurementTarget {
       log.error("Luftdaten failed: ${response.statusText}")
     }
   }
+
+  override def save(measurement: AppTypes.Measurement): Unit = ???
 }
 
 object Luftdaten {

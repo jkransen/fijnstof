@@ -2,20 +2,22 @@ package nl.kransen.fijnstof
 
 import java.io.{IOException, InputStream, PipedInputStream, PipedOutputStream}
 
+import cats.effect.IO
 import purejavacomm.{CommPortIdentifier, SerialPort, SerialPortEventListener}
-import zio.{Task, ZIO}
 
 import scala.collection.JavaConverters._
 
 object Serial {
 
-  def findPort(portName: String): Task[SerialPort] = {
+  def findPort(portName: String): IO[SerialPort] = {
     if ("TEST".equals(portName)) {
-      Task(new TestSerialPort())
+      IO(new TestSerialPort())
     } else {
-      ZIO.fromOption(listPorts.find(_.getName.equalsIgnoreCase(portName)))
-        .mapError(_ => new IOException("s\"Serial port $portName not found\""))
-        .flatMap(port => Task(openPort(port)))
+      for {
+        ports <- listPorts
+        port <- IO(ports.find(_.getName.equalsIgnoreCase(portName))
+              .getOrElse(throw new IOException(s"Port not found: $portName")))
+      } yield openPort(port)
     }
   }
 
@@ -25,7 +27,7 @@ object Serial {
     port
   }
 
-  def listPorts: List[CommPortIdentifier] = CommPortIdentifier.getPortIdentifiers.asScala.toList
+  def listPorts: IO[List[CommPortIdentifier]] = IO(CommPortIdentifier.getPortIdentifiers.asScala.toList)
 }
 
 class TestSerialPort extends SerialPort {
@@ -34,7 +36,7 @@ class TestSerialPort extends SerialPort {
 
   val ex = new ScheduledThreadPoolExecutor(1)
 
-  def getInputStream: InputStream = {
+  override def getInputStream: InputStream = {
     //                                    aa   c0 01 02 03 04 05 06  15   ab
     val validPayload: Array[Int] = Array(170, 192, 1, 2, 3, 4, 5, 6, 21, 171)
     val pos = new PipedOutputStream()

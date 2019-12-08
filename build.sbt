@@ -11,15 +11,14 @@ packageDescription := """This software reads sensors and pushes readings to exte
   Supported services: Domoticz, Luftdaten."""
 scalaVersion := "2.12.6"
 
-val zioVersion = "1.3.1.0-RC3"
 val fs2Version = "1.0.4"
 val sttpVersion = "2.0.0-RC3"
 val circeVersion = "0.9.3"
 
 libraryDependencies ++= Seq(
-  "dev.zio"                      %% "zio-interop-cats"              % zioVersion,
   "co.fs2"                       %% "fs2-core"                      % fs2Version,
   "co.fs2"                       %% "fs2-io"                        % fs2Version,
+  "org.typelevel"                %% "cats-effect"                   % "2.0.0",
   "org.typelevel"                %% "cats-core"                     % "1.0.1",
   "com.softwaremill.sttp.client" %% "core"                          % sttpVersion,
   "com.softwaremill.sttp.client" %% "circe"                         % sttpVersion,

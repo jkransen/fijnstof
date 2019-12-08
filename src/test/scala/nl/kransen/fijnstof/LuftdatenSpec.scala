@@ -1,5 +1,6 @@
 package nl.kransen.fijnstof
 
+import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers._
 
@@ -7,8 +8,7 @@ class LuftdatenSpec extends FlatSpec {
 
   "Valid sds011 measurement" should "map to correct luftdaten json" in {
 
-    val validPm25Measurement = Pm25Measurement(id = 134, pm25 = 123)
-    val validPm10Measurement = Pm10Measurement(id = 134, pm10 = 234)
+    val validPmMeasurement = SdsMeasurement(id = 134, pm25 = 123, pm10 = 234)
 
     val expectedJson = s"""
                           |{
@@ -20,7 +20,7 @@ class LuftdatenSpec extends FlatSpec {
                           |}
        """.stripMargin.replaceAll("\\s", "").replace("fijnstof", "fijnstof ")
 
-    val actualJson = Luftdaten.toJson(validPm25Measurement, validPm10Measurement)
+    val actualJson = Luftdaten.toJson(validPmMeasurement)
 
     expectedJson should equal(actualJson)
   }

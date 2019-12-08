@@ -2,16 +2,16 @@ package nl.kransen.fijnstof
 
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
+import cats.effect.{Blocker, ContextShift, IO}
 import fs2.{Pipe, Pull, Stream, io}
+import nl.kransen.fijnstof.Main.AppTypes
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
-import zio.{Task, ZIO}
-import zio.interop.catz.console
 
 import scala.concurrent.ExecutionContext
 
-case class CO2Measurement(ppm: Int) {
+case class CO2Measurement(ppm: Int) extends AppTypes.Measurement {
   val str: String = ppm.toString
 }
 
@@ -23,23 +23,23 @@ object CO2Measurement {
 }
 
 object Mhz19 {
+
   private val log = LoggerFactory.getLogger("MH-Z19")
 
-  def apply(sds: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor): Task[Stream[SdsMeasurement]] = {
+  def apply(mhz19: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor, cs: ContextShift[IO]): Stream[IO, SdsMeasurement] = {
 
     val sendReadCommand: Runnable = new Runnable {
-      val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79)
+      private val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79)
       def run(): Unit = {
-        val out = sds.getOutputStream
+        val out = mhz19.getOutputStream
         readCommand.map(_ & 0xff).foreach(out.write)
       }
     }
     ex.scheduleAtFixedRate(sendReadCommand, 1, 1, TimeUnit.SECONDS)
 
     for {
-      _      <- console.putStrLn("Starting SDS011")
-      is     <- ZIO.effect(sds.getInputStream)
-      stream <- io.readInputStream(is, 1, ec)
+      blocker <- Stream.resource(Blocker[IO])
+      stream <- io.readInputStream(IO(mhz19.getInputStream), 1, blocker.blockingContext)
         .map(_.toInt & 0xff)
         .through(SdsStateMachine.collectMeasurements())
     } yield stream

@@ -3,20 +3,20 @@ package nl.kransen.fijnstof
 import sttp.client._
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
-import nl.kransen.fijnstof.Main.AppTypes.MeasurementTarget
+import nl.kransen.fijnstof.Main.AppTypes.{Measurement, MeasurementTarget}
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
 
-class Domoticz private(host: String, port: Int, maybePm25Idx: Option[String], maybePm10Idx: Option[String], maybeCo2Idx: Option[String]) extends MeasurementTarget {
+class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], maybePm10Idx: Option[String], maybeCo2Idx: Option[String]) extends MeasurementTarget {
 
   private val log = LoggerFactory.getLogger("Domoticz")
 
   log.info(s"Domoticz host: $host, port: $port")
   log.info(s"PM2.5 IDX: $maybePm25Idx, PM10 IDX: $maybePm10Idx, CO2 IDX: $maybeCo2Idx")
 
-  implicit val backend = HttpURLConnectionBackend() // AsyncHttpClientZioBackend()
+  implicit val backend = HttpURLConnectionBackend()
 
-  def save(pmMeasurement: SdsMeasurement): Unit = {
+  def savePM(pmMeasurement: SdsMeasurement): Unit = {
     maybePm25Idx match {
       case Some(pm25Idx) =>
         log.debug("PM2.5 Measurement: " + pmMeasurement.pm25str)
@@ -54,7 +54,7 @@ class Domoticz private(host: String, port: Int, maybePm25Idx: Option[String], ma
     }
   }
 
-  def save(co2Measurement: CO2Measurement): Unit = {
+  def saveCO2(co2Measurement: CO2Measurement): Unit = {
     maybeCo2Idx match {
       case Some(co2Idx) =>
         log.debug("CO2 Measurement: " + co2Measurement)
@@ -69,6 +69,13 @@ class Domoticz private(host: String, port: Int, maybePm25Idx: Option[String], ma
         }
       case None =>
         log.warn("Received PM2.5 measurement, but no IDX set")
+    }
+  }
+
+  override def save(measurement: Measurement): Unit = {
+    measurement match {
+      case m @ SdsMeasurement(_, _, _) => savePM(m)
+      case c @ CO2Measurement(_) => saveCO2(c)
     }
   }
 }
