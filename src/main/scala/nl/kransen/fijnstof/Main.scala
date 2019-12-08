@@ -69,7 +69,10 @@ object Main extends IOApp {
       source <- getSource(port)
     } yield source
 
-    source.compile.drain // .scan(meas => targets.foreach(target => target.save(meas)))
+    source.map { meas =>
+      targets.foreach(t => t.save(meas))
+      meas
+    }.compile.drain
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
