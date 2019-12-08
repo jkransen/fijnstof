@@ -92,22 +92,19 @@ object SdsStateMachine {
     }
   }
 
-  case class PM10High(pm25Value: Int, pm10Value: Int, checksum: Int)
-      extends SdsState {
+  case class PM10High(pm25Value: Int, pm10Value: Int, checksum: Int) extends SdsState {
     def nextState(nextByte: Int): SdsState = {
       IdLow(pm25Value, pm10Value + nextByte * 256, checksum + nextByte)
     }
   }
 
-  case class IdLow(pm25Value: Int, pm10Value: Int, checksum: Int)
-      extends SdsState {
+  case class IdLow(pm25Value: Int, pm10Value: Int, checksum: Int) extends SdsState {
     def nextState(nextByte: Int): SdsState = {
       IdHigh(pm25Value, pm10Value, nextByte, checksum + nextByte)
     }
   }
 
-  case class IdHigh(pm25Value: Int, pm10Value: Int, idValue: Int, checksum: Int)
-      extends SdsState {
+  case class IdHigh(pm25Value: Int, pm10Value: Int, idValue: Int, checksum: Int) extends SdsState {
     def nextState(nextByte: Int): SdsState = {
       Checksum(
         pm25Value,
@@ -118,11 +115,7 @@ object SdsStateMachine {
     }
   }
 
-  case class Checksum(pm25Value: Int,
-                      pm10Value: Int,
-                      idValue: Int,
-                      checksum: Int)
-      extends SdsState {
+  case class Checksum(pm25Value: Int, pm10Value: Int, idValue: Int, checksum: Int) extends SdsState {
     def nextState(nextByte: Int): SdsState = {
       if (nextByte == (checksum & 0xff)) {
         CompleteMeasurement(SdsMeasurement(idValue, pm25Value, pm10Value))

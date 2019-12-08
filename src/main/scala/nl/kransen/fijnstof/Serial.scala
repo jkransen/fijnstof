@@ -15,8 +15,8 @@ object Serial {
     } else {
       for {
         ports <- listPorts
-        port <- IO(ports.find(_.getName.equalsIgnoreCase(portName))
-              .getOrElse(throw new IOException(s"Port not found: $portName")))
+        port  <- IO(ports.find(_.getName.equalsIgnoreCase(portName))
+                   .getOrElse(throw new IOException(s"Port not found: $portName")))
       } yield openPort(port)
     }
   }

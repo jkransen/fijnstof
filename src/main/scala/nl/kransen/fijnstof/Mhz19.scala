@@ -112,29 +112,25 @@ object Mhz19StateMachine {
     }
   }
 
-  case class Ignore2(co2Value: Int, checksum: Int)
-    extends Mhz19State {
+  case class Ignore2(co2Value: Int, checksum: Int) extends Mhz19State {
     def nextState(nextByte: Int): Mhz19State = {
       Ignore3(co2Value, checksum + nextByte)
     }
   }
 
-  case class Ignore3(co2Value: Int, checksum: Int)
-    extends Mhz19State {
+  case class Ignore3(co2Value: Int, checksum: Int) extends Mhz19State {
     def nextState(nextByte: Int): Mhz19State = {
       Ignore4(co2Value, checksum + nextByte)
     }
   }
 
-  case class Ignore4(co2Value: Int, checksum: Int)
-    extends Mhz19State {
+  case class Ignore4(co2Value: Int, checksum: Int) extends Mhz19State {
     def nextState(nextByte: Int): Mhz19State = {
       Checksum(co2Value, checksum + nextByte)
     }
   }
 
-  case class Checksum(co2Value: Int, checksum: Int)
-    extends Mhz19State {
+  case class Checksum(co2Value: Int, checksum: Int) extends Mhz19State {
     def nextState(nextByte: Int): Mhz19State = {
       if (nextByte == (checksum & 0xff)) {
         CompleteMeasurement(CO2Measurement(co2Value))

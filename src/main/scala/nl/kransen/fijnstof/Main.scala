@@ -41,7 +41,7 @@ object Main extends IOApp {
   lazy val machineId: Option[String] = {
     val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
     for {
-      cpuinfo <- Try(fromFile("/proc/cpuinfo").mkString).toOption
+      cpuinfo    <- Try(fromFile("/proc/cpuinfo").mkString).toOption
       firstMatch <- serialRegex.findFirstMatchIn(cpuinfo)
     } yield "fijnstof-" + firstMatch.group(1)
   }
@@ -65,7 +65,7 @@ object Main extends IOApp {
     ).collect { case Some(target) => target }
 
     val source: Stream[IO, SdsMeasurement] = for {
-      port <- Stream.eval(Serial.findPort(uartDevice))
+      port   <- Stream.eval(Serial.findPort(uartDevice))
       source <- getSource(port)
     } yield source
 
@@ -80,13 +80,13 @@ object Main extends IOApp {
     if (args.contains("list")) {
       for {
         ports <- Serial.listPorts
-        _ <- IO(ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}"))))
+        _     <- IO(ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}"))))
       } yield ExitCode.Success
     } else {
       val isTest = args.contains("test")
       for {
         configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
-        _ <- IO(configs.traverse(runFlow(isTest)))
+        _       <- IO(configs.traverse(runFlow(isTest)))
       } yield ExitCode.Success
     }
   }

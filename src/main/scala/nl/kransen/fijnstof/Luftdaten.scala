@@ -24,7 +24,7 @@ class Luftdaten private (luftdatenId: Option[String]) extends MeasurementTarget 
     .header("X-PIN", "1")
     .contentType("application/json")
 
-  def save(pmMeasurement: SdsMeasurement): Unit = {
+  def savePM(pmMeasurement: SdsMeasurement): Unit = {
     val id = luftdatenId.getOrElse("fijnstof-" + pmMeasurement.id)
     val json = toJson(pmMeasurement)
     log.trace(s"JSON: $json")
@@ -38,7 +38,9 @@ class Luftdaten private (luftdatenId: Option[String]) extends MeasurementTarget 
     }
   }
 
-  override def save(measurement: AppTypes.Measurement): Unit = ???
+  override def save(measurement: AppTypes.Measurement): Unit = measurement match {
+    case sds @ SdsMeasurement(_, _, _) => savePM(sds)
+  }
 }
 
 object Luftdaten {
@@ -54,4 +56,4 @@ object Luftdaten {
 }
 
 case class SensorDataValue(value_type: String, value: String)
-case class LuftdatenPayload(sensordatavalues: List[SensorDataValue], software_version: String = "fijnstof 1.0")
+case class LuftdatenPayload(sensordatavalues: List[SensorDataValue], software_version: String = "fijnstof 1.2")
