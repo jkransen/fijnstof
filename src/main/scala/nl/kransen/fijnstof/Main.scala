@@ -82,13 +82,13 @@ object Main extends IOApp {
       log.debug("Listing serial ports")
       for {
         ports <- Serial.listPorts
-        _     <- IO(ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}"))))
+        _     <- ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}")))
       } yield ExitCode.Success
     } else {
       val isTest = args.contains("test")
       for {
         configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
-        _       <- IO(configs.traverse(runFlow(isTest)))
+        _       <- configs.traverse(runFlow(isTest))
       } yield ExitCode.Success
     }
   }
