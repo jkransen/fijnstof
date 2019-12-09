@@ -71,6 +71,7 @@ object Main extends IOApp {
 
     source.map { meas =>
       targets.foreach(t => t.save(meas))
+      log.debug(s"Moeasurement: $meas")
       meas
     }.compile.drain
   }
@@ -78,6 +79,7 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     log.info(s"Starting fijnstof, machine id: $machineId")
     if (args.contains("list")) {
+      log.debug("Listing serial ports")
       for {
         ports <- Serial.listPorts
         _     <- IO(ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}"))))

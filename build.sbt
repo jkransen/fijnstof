@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "com.softwaremill.sttp.client" %% "circe"                         % sttpVersion,
   "com.softwaremill.sttp.client" %% "async-http-client-backend-zio" % sttpVersion,
   "com.github.purejavacomm"       % "purejavacomm"                  % "1.0.1.RELEASE",
-  "org.slf4j"                     % "slf4j-log4j"                   % "1.7.25",
+  "org.slf4j"                     % "slf4j-log4j12"                 % "1.7.25",
   "com.typesafe"                  % "config"                        % "1.3.2",
   "io.circe"                     %% "circe-core"                    % circeVersion,
   "io.circe"                     %% "circe-generic"                 % circeVersion,
