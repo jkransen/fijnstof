@@ -56,7 +56,7 @@ object Main extends IOApp {
     def getSource(port: SerialPort): Stream[IO, SdsMeasurement] = sourceType.toLowerCase match {
       case "sds011" => Sds011(port, interval)
       case "mhz19" => Mhz19(port, interval)
-      // case _ => Stream.raiseError(new IOException(s"Source type $sourceType unknown"))
+      case _ => Stream.raiseError[IO](new IOException(s"Source type $sourceType unknown"))
     }
 
     val targets: Seq[MeasurementTarget] = Seq(
@@ -64,11 +64,12 @@ object Main extends IOApp {
       config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
 
-    val source: Stream[IO, SdsMeasurement] = for {
+    val infiniteSource: Stream[IO, SdsMeasurement] = for {
       port   <- Stream.eval(Serial.findPort(uartDevice))
       source <- getSource(port)
     } yield source
 
+    val source = if (isTest) infiniteSource.take(1) else infiniteSource
     source.map { meas =>
       targets.foreach(t => t.save(meas))
       log.debug(s"Moeasurement: $meas")
