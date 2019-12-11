@@ -12,7 +12,7 @@ object Sds011 {
   def apply(sds: SerialPort, interval: Int)(implicit cs: ContextShift[IO]): Stream[IO, SdsMeasurement] =
     for {
       blocker <- Stream.resource(Blocker[IO])
-      stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker.blockingContext)
+      stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
       .map(_.toInt & 0xff)
       .through(SdsStateMachine.collectMeasurements())
     } yield stream
@@ -28,7 +28,7 @@ object SdsStateMachine {
       _.pull.uncons1.flatMap {
         case Some((nextByte: Int, tail)) =>
           val nextState = state.nextState(nextByte)
-          log.debug(f"Next byte: ${nextByte}%02x, next state: $nextState")
+          log.trace(f"Next byte: ${nextByte}%02x, next state: $nextState")
           nextState match {
             case CompleteMeasurement(measurement) =>
               Pull.output1(measurement) >> go(nextState)(tail)

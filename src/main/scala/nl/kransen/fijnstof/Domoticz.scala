@@ -12,9 +12,9 @@ class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], m
   private val log = LoggerFactory.getLogger("Domoticz")
 
   log.info(s"Domoticz host: $host, port: $port")
-  log.info(s"PM2.5 IDX: $maybePm25Idx, PM10 IDX: $maybePm10Idx, CO2 IDX: $maybeCo2Idx")
+  log.info(s"PM2.5 IDX: $maybePm25Idx, PM10 IDX: $maybePm10Idx, CO₂ IDX: $maybeCo2Idx")
 
-  implicit val backend = HttpURLConnectionBackend()
+  implicit val backend = HttpURLConnectionBackend() // AsyncHttpClientFs2Backend
 
   def savePM(pmMeasurement: SdsMeasurement): Unit = {
     maybePm25Idx match {
@@ -57,18 +57,18 @@ class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], m
   def saveCO2(co2Measurement: CO2Measurement): Unit = {
     maybeCo2Idx match {
       case Some(co2Idx) =>
-        log.debug("CO2 Measurement: " + co2Measurement)
+        log.debug("CO₂ Measurement: " + co2Measurement)
         val request = basicRequest
           .post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=$co2Idx&nvalue=&svalue=${co2Measurement.str}")
         val response = request.send()
         if (response.isSuccess) {
-          log.trace("Domoticz CO2 response: " + response.toString())
+          log.trace("Domoticz CO₂ response: " + response.toString())
           log.info(s"CO2 update for IDX $co2Idx successful: ${co2Measurement.str} ppm")
         } else {
-          log.error(s"Domoticz CO2 failed: ${response.statusText}")
+          log.error(s"Domoticz CO₂ failed: ${response.statusText}")
         }
       case None =>
-        log.warn("Received PM2.5 measurement, but no IDX set")
+        log.warn("Received CO₂ measurement, but no IDX set")
     }
   }
 

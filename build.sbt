@@ -9,11 +9,12 @@ packageSummary := "SDS021 sensor reader for Domoticz"
 packageDescription := """This software reads sensors and pushes readings to external services.
   Supported sensors: SDS011, SDS021, MH-Z19(B).
   Supported services: Domoticz, Luftdaten."""
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.10"
+scalacOptions += "-Ypartial-unification"
 
 val fs2Version = "1.0.4"
-val sttpVersion = "2.0.0-RC3"
-val circeVersion = "0.9.3"
+val sttpVersion = "2.0.0-RC5"
+val circeVersion = "0.11.1"
 
 libraryDependencies ++= Seq(
   "co.fs2"                       %% "fs2-core"                      % fs2Version,
@@ -22,7 +23,7 @@ libraryDependencies ++= Seq(
   "org.typelevel"                %% "cats-core"                     % "1.0.1",
   "com.softwaremill.sttp.client" %% "core"                          % sttpVersion,
   "com.softwaremill.sttp.client" %% "circe"                         % sttpVersion,
-  "com.softwaremill.sttp.client" %% "async-http-client-backend-zio" % sttpVersion,
+  "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2" % sttpVersion,
   "com.github.purejavacomm"       % "purejavacomm"                  % "1.0.1.RELEASE",
   "org.slf4j"                     % "slf4j-log4j12"                 % "1.7.25",
   "com.typesafe"                  % "config"                        % "1.3.2",

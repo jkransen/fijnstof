@@ -39,7 +39,7 @@ object Mhz19 {
 
     for {
       blocker <- Stream.resource(Blocker[IO])
-      stream <- io.readInputStream(IO(mhz19.getInputStream), 1, blocker.blockingContext)
+      stream <- io.readInputStream(IO(mhz19.getInputStream), 1, blocker)
         .map(_.toInt & 0xff)
         .through(SdsStateMachine.collectMeasurements())
     } yield stream
