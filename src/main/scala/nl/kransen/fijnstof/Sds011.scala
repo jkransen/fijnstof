@@ -1,6 +1,6 @@
 package nl.kransen.fijnstof
 
-import cats.effect.{Blocker, ContextShift, IO}
+import cats.effect._
 import nl.kransen.fijnstof.Main.AppTypes.Measurement
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import purejavacomm.SerialPort
@@ -11,10 +11,10 @@ object Sds011 {
 
   def apply(sds: SerialPort, interval: Int)(implicit cs: ContextShift[IO]): Stream[IO, SdsMeasurement] =
     for {
-      blocker <- Stream.resource(Blocker[IO])
-      stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
-      .map(_.toInt & 0xff)
-      .through(SdsStateMachine.collectMeasurements())
+       blocker <- Stream.resource(Blocker[IO])
+       stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
+        .map(_.toInt & 0xff)
+        .through(SdsStateMachine.collectMeasurements())
     } yield stream
 }
 

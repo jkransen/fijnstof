@@ -72,22 +72,24 @@ object Main extends IOApp {
     val source = if (isTest) infiniteSource.take(1) else infiniteSource
     source.map { meas =>
       targets.foreach(t => t.save(meas))
-      log.debug(s"Moeasurement: $meas")
+      log.debug(s"Measurement: $meas")
       meas
     }.compile.drain
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    log.info(s"Starting fijnstof, machine id: $machineId")
+    val logStarting = IO(log.info(s"Starting fijnstof, machine id: $machineId"))
     if (args.contains("list")) {
-      log.debug("Listing serial ports")
       for {
-        ports <- Serial.listPorts
-        _     <- ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}")))
+        _       <- logStarting
+        _       <- IO(log.debug("Listing serial ports"))
+        ports   <- Serial.listPorts
+        _       <- ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}")))
       } yield ExitCode.Success
     } else {
       val isTest = args.contains("test")
       for {
+        _       <- logStarting
         configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
         _       <- configs.traverse(runFlow(isTest))
       } yield ExitCode.Success

@@ -43,7 +43,7 @@ class TestSerialPort extends SerialPort {
     val task = new Runnable {
       def run(): Unit = validPayload.foreach(pos.write)
     }
-    val f = ex.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
+    val f = ex.scheduleAtFixedRate(task, 0, 1, TimeUnit.SECONDS)
     new PipedInputStream(pos)
   }
 
