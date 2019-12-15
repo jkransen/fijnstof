@@ -7,7 +7,7 @@ import cats._
 import cats.effect._
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
-import fs2.Stream
+import fs2.{Pipe, Stream}
 import net.ceedubs.ficus.Ficus._
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
@@ -28,7 +28,7 @@ object Main extends IOApp {
     type MeasurementSource
 
     trait MeasurementTarget {
-      def save(measurement: Measurement)
+      def save(measurement: Measurement): IO[Unit]
     }
   }
 
@@ -61,8 +61,15 @@ object Main extends IOApp {
 
     val targets: Seq[MeasurementTarget] = Seq(
       config.as[Option[Config]]("domoticz").map(config => Domoticz(config)),
-      config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
+//      config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
+
+    def doWithMeasurement(meas: Measurement): IO[Unit] = for {
+      _      <- IO(log.info("doWithMeasurement"))
+      target <- IO(targets.toList)
+      _      <- target.traverse(t => IO(t.save(meas)))
+      _      <- IO(log.debug(s"Measurement: $meas saved"))
+    } yield ()
 
     val infiniteSource: Stream[IO, SdsMeasurement] = for {
       port   <- Stream.eval(Serial.findPort(uartDevice))
@@ -70,11 +77,8 @@ object Main extends IOApp {
     } yield source
 
     val source = if (isTest) infiniteSource.take(1) else infiniteSource
-    source.map { meas =>
-      targets.foreach(t => t.save(meas))
-      log.debug(s"Measurement: $meas")
-      meas
-    }.compile.drain
+    source.evalMap(nxt => doWithMeasurement(nxt))
+        .compile.drain
   }
 
   override def run(args: List[String]): IO[ExitCode] = {

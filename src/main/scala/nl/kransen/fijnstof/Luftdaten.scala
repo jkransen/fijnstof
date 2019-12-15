@@ -1,5 +1,6 @@
 package nl.kransen.fijnstof
 
+import cats.effect.IO
 import com.typesafe.config.Config
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -38,8 +39,8 @@ class Luftdaten private (luftdatenId: Option[String]) extends MeasurementTarget 
     }
   }
 
-  override def save(measurement: AppTypes.Measurement): Unit = measurement match {
-    case sds @ SdsMeasurement(_, _, _) => savePM(sds)
+  override def save(measurement: AppTypes.Measurement): IO[Unit] = measurement match {
+    case sds @ SdsMeasurement(_, _, _) => IO(savePM(sds))
   }
 }
 

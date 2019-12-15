@@ -1,5 +1,9 @@
 package nl.kransen.fijnstof
 
+import cats._
+import cats.data.OptionT
+import cats.effect.IO
+import cats.implicits._
 import sttp.client._
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
@@ -14,67 +18,41 @@ class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], m
   log.info(s"Domoticz host: $host, port: $port")
   log.info(s"PM2.5 IDX: $maybePm25Idx, PM10 IDX: $maybePm10Idx, CO₂ IDX: $maybeCo2Idx")
 
-  implicit val backend = HttpURLConnectionBackend() // AsyncHttpClientFs2Backend
+  implicit val backend = HttpURLConnectionBackend() // TODO  AsyncHttpClientCatsBackend // AsyncHttpClientFs2Backend // HttpURLConnectionBackend
 
-  def savePM(pmMeasurement: SdsMeasurement): Unit = {
-    maybePm25Idx match {
-      case Some(pm25Idx) =>
-        log.debug("PM2.5 Measurement: " + pmMeasurement.pm25str)
-        val get1 = s""
-        log.trace(get1)
-        val request = basicRequest
-          .post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm25Idx&nvalue=&svalue=${pmMeasurement.pm25str}")
-        val response = request.send()
-        if (response.isSuccess) {
-          log.trace("Domoticz PM2.5 response: " + response.toString())
-          log.info(s"PM2.5 update for IDX $pm25Idx successful: ${pmMeasurement.pm25str} µg/m³")
-        } else {
-          log.error(s"Domoticz PM2.5 failed: ${response.statusText}")
-        }
-      case None =>
-        log.warn("Received PM2.5 measurement, but no IDX set")
-    }
-
-    maybePm10Idx match {
-      case Some(pm10Idx) =>
-        log.debug("PM10 Measurement: " + pmMeasurement.pm10str)
-        val get1 = s""
-        log.trace(get1)
-        val request = basicRequest
-          .post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=$pm10Idx&nvalue=&svalue=${pmMeasurement.pm10str}")
-        val response = request.send()
-        if (response.isSuccess) {
-          log.trace("Domoticz PM10 response: " + response.toString())
-          log.info(s"PM10 update for IDX $pm10Idx successful: ${pmMeasurement.pm10str} µg/m³")
-        } else {
-          log.error(s"Domoticz PM10 failed: ${response.statusText}")
-        }
-      case None =>
-        log.warn("Received PM10 measurement, but no IDX set")
-    }
+  def savePM25(sdsMeasurement: SdsMeasurement): IO[Unit] = {
+    val response = for {
+      pm25Idx  <- OptionT.fromOption[IO](maybePm25Idx)
+      _        <- OptionT.liftF(IO(log.debug("PM2.5 Measurement: " + sdsMeasurement.pm25str)))
+      response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${pm25Idx}&nvalue=&svalue=${sdsMeasurement.pm25str}").send()))
+      _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
+    } yield ()
+    response.getOrElseF(IO(log.error("Domoticz PM2.5 failed")))
   }
 
-  def saveCO2(co2Measurement: CO2Measurement): Unit = {
-    maybeCo2Idx match {
-      case Some(co2Idx) =>
-        log.debug("CO₂ Measurement: " + co2Measurement)
-        val request = basicRequest
-          .post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=$co2Idx&nvalue=&svalue=${co2Measurement.str}")
-        val response = request.send()
-        if (response.isSuccess) {
-          log.trace("Domoticz CO₂ response: " + response.toString())
-          log.info(s"CO2 update for IDX $co2Idx successful: ${co2Measurement.str} ppm")
-        } else {
-          log.error(s"Domoticz CO₂ failed: ${response.statusText}")
-        }
-      case None =>
-        log.warn("Received CO₂ measurement, but no IDX set")
-    }
+  def savePM10(sdsMeasurement: SdsMeasurement): IO[Unit] = {
+    val response = for {
+      pm10Idx  <- OptionT.fromOption[IO](maybePm10Idx)
+      _        <- OptionT.liftF(IO(log.debug("PM10 Measurement: " + sdsMeasurement.pm10str)))
+      response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${pm10Idx}&nvalue=&svalue=${sdsMeasurement.pm10str}").send()))
+      _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
+    } yield ()
+    response.getOrElseF(IO(log.error("Domoticz PM10 failed")))
   }
 
-  override def save(measurement: Measurement): Unit = {
+  def saveCO2(co2Measurement: CO2Measurement): IO[Unit] = {
+    val response = for {
+      co2Idx   <- OptionT.fromOption[IO](maybeCo2Idx)
+      _        <- OptionT.liftF(IO(log.debug("CO₂ Measurement: " + co2Measurement)))
+      response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${co2Idx}&nvalue=&svalue=${co2Measurement.str}").send()))
+      _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
+    } yield ()
+    response.getOrElseF(IO(log.error("Domoticz CO₂ failed")))
+  }
+
+  override def save(measurement: Measurement): IO[Unit] = {
     measurement match {
-      case m @ SdsMeasurement(_, _, _) => savePM(m)
+      case m @ SdsMeasurement(_, _, _) => savePM25(m) // TODO parallel savePM10(m)
       case c @ CO2Measurement(_) => saveCO2(c)
     }
   }

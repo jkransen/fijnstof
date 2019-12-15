@@ -14,3 +14,5 @@ services:
     image: "linuxserver/domoticz:latest"
     ports:
       - 8181:8080
+    expose:
+      - 8181
