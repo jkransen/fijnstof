@@ -66,9 +66,7 @@ object Main extends IOApp {
 
     def doWithMeasurement(meas: Measurement): IO[Unit] = for {
       _      <- IO(log.info("doWithMeasurement"))
-      target <- IO(targets.toList)
-      _      <- target.traverse(t => IO(t.save(meas)))
-      _      <- IO(log.debug(s"Measurement: $meas saved"))
+      _      <- targets.toList.foldMap(t => t.save(meas))
     } yield ()
 
     val infiniteSource: Stream[IO, SdsMeasurement] = for {
@@ -88,14 +86,14 @@ object Main extends IOApp {
         _       <- logStarting
         _       <- IO(log.debug("Listing serial ports"))
         ports   <- Serial.listPorts
-        _       <- ports.traverse(port => IO(log.info(s"Serial port: ${port.getName}")))
+        _       <- ports.foldMap(port => IO(log.info(s"Serial port: ${port.getName}")))
       } yield ExitCode.Success
     } else {
       val isTest = args.contains("test")
       for {
         _       <- logStarting
         configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
-        _       <- configs.traverse(runFlow(isTest))
+        _       <- configs.foldMap(runFlow(isTest))
       } yield ExitCode.Success
     }
   }

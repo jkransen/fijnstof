@@ -22,38 +22,40 @@ class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], m
 
   def savePM25(sdsMeasurement: SdsMeasurement): IO[Unit] = {
     val response = for {
-      pm25Idx  <- OptionT.fromOption[IO](maybePm25Idx)
-      _        <- OptionT.liftF(IO(log.debug("PM2.5 Measurement: " + sdsMeasurement.pm25str)))
+      pm25Idx <- OptionT.fromOption[IO](maybePm25Idx)
+      _ <- OptionT.liftF(IO(log.debug("PM2.5 Measurement: " + sdsMeasurement.pm25str)))
       response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${pm25Idx}&nvalue=&svalue=${sdsMeasurement.pm25str}").send()))
-      _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
+      _ <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
     } yield ()
     response.getOrElseF(IO(log.error("Domoticz PM2.5 failed")))
   }
 
   def savePM10(sdsMeasurement: SdsMeasurement): IO[Unit] = {
     val response = for {
-      pm10Idx  <- OptionT.fromOption[IO](maybePm10Idx)
-      _        <- OptionT.liftF(IO(log.debug("PM10 Measurement: " + sdsMeasurement.pm10str)))
+      pm10Idx <- OptionT.fromOption[IO](maybePm10Idx)
+      _ <- OptionT.liftF(IO(log.debug("PM10 Measurement: " + sdsMeasurement.pm10str)))
       response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${pm10Idx}&nvalue=&svalue=${sdsMeasurement.pm10str}").send()))
-      _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
+      _ <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
     } yield ()
     response.getOrElseF(IO(log.error("Domoticz PM10 failed")))
   }
 
   def saveCO2(co2Measurement: CO2Measurement): IO[Unit] = {
     val response = for {
-      co2Idx   <- OptionT.fromOption[IO](maybeCo2Idx)
-      _        <- OptionT.liftF(IO(log.debug("CO₂ Measurement: " + co2Measurement)))
+      co2Idx <- OptionT.fromOption[IO](maybeCo2Idx)
+      _ <- OptionT.liftF(IO(log.debug("CO₂ Measurement: " + co2Measurement)))
       response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${co2Idx}&nvalue=&svalue=${co2Measurement.str}").send()))
-      _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
+      _ <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
     } yield ()
     response.getOrElseF(IO(log.error("Domoticz CO₂ failed")))
   }
 
   override def save(measurement: Measurement): IO[Unit] = {
     measurement match {
-      case m @ SdsMeasurement(_, _, _) => savePM25(m) // TODO parallel savePM10(m)
-      case c @ CO2Measurement(_) => saveCO2(c)
+      case m@SdsMeasurement(_, _, _) => for {
+        _ <- savePM25(m)
+        _ <- savePM10(m)
+      } yield () // TODO parallel
     }
   }
 }
