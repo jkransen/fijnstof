@@ -14,7 +14,7 @@ object Sds011 {
        blocker <- Stream.resource(Blocker[IO])
        stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
         .map(_.toInt & 0xff)
-        .through(SdsStateMachine.collectMeasurements())
+        .through(SdsStateMachine.collectMeasurements)
     } yield stream
 }
 
@@ -22,9 +22,9 @@ object SdsStateMachine {
 
   private val log = LoggerFactory.getLogger("SDS011")
 
-  def collectMeasurements[F[_]](): Pipe[F, Int, SdsMeasurement] = {
+  val collectMeasurements: Pipe[IO, Int, SdsMeasurement] = {
 
-    def go(state: SdsState): Stream[F, Int] => Pull[F, SdsMeasurement, Unit] =
+    def go(state: SdsState): Stream[IO, Int] => Pull[IO, SdsMeasurement, Unit] =
       _.pull.uncons1.flatMap {
         case Some((nextByte: Int, tail)) =>
           val nextState = state.nextState(nextByte)

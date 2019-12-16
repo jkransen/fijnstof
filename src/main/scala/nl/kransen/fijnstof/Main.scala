@@ -53,7 +53,7 @@ object Main extends IOApp {
     val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
     log.info(s"Connecting to UART (Serial) device: $uartDevice type=$sourceType interval=$interval")
 
-    def getSource(port: SerialPort): Stream[IO, SdsMeasurement] = sourceType.toLowerCase match {
+    def getSource(port: SerialPort): Stream[IO, Measurement] = sourceType.toLowerCase match {
       case "sds011" => Sds011(port, interval)
       case "mhz19" => Mhz19(port, interval)
       case _ => Stream.raiseError[IO](new IOException(s"Source type $sourceType unknown"))
@@ -61,7 +61,7 @@ object Main extends IOApp {
 
     val targets: Seq[MeasurementTarget] = Seq(
       config.as[Option[Config]]("domoticz").map(config => Domoticz(config)),
-//      config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
+      config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
 
     def doWithMeasurement(meas: Measurement): IO[Unit] = for {
@@ -69,7 +69,7 @@ object Main extends IOApp {
       _      <- targets.toList.foldMap(t => t.save(meas))
     } yield ()
 
-    val infiniteSource: Stream[IO, SdsMeasurement] = for {
+    val infiniteSource: Stream[IO, Measurement] = for {
       port   <- Stream.eval(Serial.findPort(uartDevice))
       source <- getSource(port)
     } yield source

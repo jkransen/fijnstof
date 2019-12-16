@@ -12,15 +12,15 @@ packageDescription := """This software reads sensors and pushes readings to exte
 scalaVersion := "2.12.10"
 scalacOptions += "-Ypartial-unification"
 
-val fs2Version = "1.0.4"
+val fs2Version = "2.1.0"
 val sttpVersion = "2.0.0-RC5"
-val circeVersion = "0.11.1"
+val circeVersion = "0.12.3"
 
 libraryDependencies ++= Seq(
   "co.fs2"                       %% "fs2-core"                      % fs2Version,
   "co.fs2"                       %% "fs2-io"                        % fs2Version,
   "org.typelevel"                %% "cats-effect"                   % "2.0.0",
-  "org.typelevel"                %% "cats-core"                     % "1.0.1",
+  "org.typelevel"                %% "cats-core"                     % "2.0.0",
   "com.softwaremill.sttp.client" %% "core"                          % sttpVersion,
   "com.softwaremill.sttp.client" %% "circe"                         % sttpVersion,
   "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2" % sttpVersion,

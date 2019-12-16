@@ -18,29 +18,27 @@ class Luftdaten private (luftdatenId: Option[String]) extends MeasurementTarget 
 
   implicit val backend = HttpURLConnectionBackend()
 
-  log.info(s"Luftdaten ID: $luftdatenId")
-
   private val request = basicRequest
     .post(uri"https://api.luftdaten.info/v1/push-sensor-data/")
     .header("X-PIN", "1")
     .contentType("application/json")
 
-  def savePM(pmMeasurement: SdsMeasurement): Unit = {
+  def savePM(pmMeasurement: SdsMeasurement): IO[Unit] = {
     val id = luftdatenId.getOrElse("fijnstof-" + pmMeasurement.id)
-    val json = toJson(pmMeasurement)
-    log.trace(s"JSON: $json")
-
-    val response = request.header("X-Sensor", id).body(json).send()
-
-    if (response.isSuccess) {
-      log.debug(s"Luftdaten succeeded: ${response.body}")
-    } else {
-      log.error("Luftdaten failed: ${response.statusText}")
-    }
+    for {
+      json     <- IO(toJson(pmMeasurement))
+      _        <- IO(log.info(s"JSON: $json"))
+      response <- IO(request.header("X-Sensor", id).body(json).send())
+      _        <- if (response.isSuccess) {
+                    IO(log.debug(s"Luftdaten succeeded: ${response.body}"))
+                  } else {
+                    IO(log.error("Luftdaten failed: ${response.statusText}"))
+                  }
+    } yield ()
   }
 
   override def save(measurement: AppTypes.Measurement): IO[Unit] = measurement match {
-    case sds @ SdsMeasurement(_, _, _) => IO(savePM(sds))
+    case sds @ SdsMeasurement(_, _, _) => savePM(sds)
   }
 }
 

@@ -5,7 +5,6 @@ import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 import cats.effect.{Blocker, ContextShift, IO}
 import fs2.{Pipe, Pull, Stream, io}
 import nl.kransen.fijnstof.Main.AppTypes
-import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
 
@@ -24,9 +23,7 @@ object CO2Measurement {
 
 object Mhz19 {
 
-  private val log = LoggerFactory.getLogger("MH-Z19")
-
-  def apply(mhz19: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor, cs: ContextShift[IO]): Stream[IO, SdsMeasurement] = {
+  def apply(mhz19: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor, cs: ContextShift[IO]): Stream[IO, CO2Measurement] = {
 
     val sendReadCommand: Runnable = new Runnable {
       private val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79)
@@ -35,20 +32,20 @@ object Mhz19 {
         readCommand.map(_ & 0xff).foreach(out.write)
       }
     }
-    ex.scheduleAtFixedRate(sendReadCommand, 1, 1, TimeUnit.SECONDS)
+    ex.scheduleAtFixedRate(sendReadCommand, 0, 4, TimeUnit.SECONDS)
 
     for {
       blocker <- Stream.resource(Blocker[IO])
       stream <- io.readInputStream(IO(mhz19.getInputStream), 1, blocker)
         .map(_.toInt & 0xff)
-        .through(SdsStateMachine.collectMeasurements())
+        .through(Mhz19StateMachine.collectMeasurements())
     } yield stream
   }
 }
 
 object Mhz19StateMachine {
 
-  private val log = LoggerFactory.getLogger("SDS011")
+  private val log = LoggerFactory.getLogger("MH-Z19")
 
   def collectMeasurements[F[_]](): Pipe[F, Int, CO2Measurement] = {
 
