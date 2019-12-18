@@ -9,7 +9,6 @@ import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import fs2.{Pipe, Stream}
 import net.ceedubs.ficus.Ficus._
-import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
 
@@ -50,7 +49,6 @@ object Main extends IOApp {
     val uartDevice = config.getString("device")
     val sourceType = config.getString("type")
     val interval = config.as[Option[Int]]("interval").getOrElse(90)
-    val batchSize = config.as[Option[Int]]("batchSize").getOrElse(interval)
     log.info(s"Connecting to UART (Serial) device: $uartDevice type=$sourceType interval=$interval")
 
     def getSource(port: SerialPort): Stream[IO, Measurement] = sourceType.toLowerCase match {
@@ -64,26 +62,20 @@ object Main extends IOApp {
       config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
 
-    def doWithMeasurement(meas: Measurement): IO[Unit] = for {
-      _      <- IO(log.info("doWithMeasurement"))
-      _      <- targets.toList.foldMap(t => t.save(meas))
-    } yield ()
-
     val infiniteSource: Stream[IO, Measurement] = for {
       port   <- Stream.eval(Serial.findPort(uartDevice))
       source <- getSource(port)
     } yield source
 
-    val source = if (isTest) infiniteSource.take(1) else infiniteSource
-    source.evalMap(nxt => doWithMeasurement(nxt))
+    val source =  if (isTest) infiniteSource.take(1) else infiniteSource
+    source.evalMap(meas => targets.toList.foldMap(t => t.save(meas)))
         .compile.drain
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val logStarting = IO(log.info(s"Starting fijnstof, machine id: $machineId"))
     if (args.contains("list")) {
       for {
-        _       <- logStarting
+        _       <- IO(log.info(s"Starting fijnstof, listing serial ports, machine id: $machineId"))
         _       <- IO(log.debug("Listing serial ports"))
         ports   <- Serial.listPorts
         _       <- ports.foldMap(port => IO(log.info(s"Serial port: ${port.getName}")))
@@ -91,7 +83,7 @@ object Main extends IOApp {
     } else {
       val isTest = args.contains("test")
       for {
-        _       <- logStarting
+        _       <- IO(log.info(s"Starting fijnstof, test mode: $isTest, machine id: $machineId"))
         configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
         _       <- configs.foldMap(runFlow(isTest))
       } yield ExitCode.Success

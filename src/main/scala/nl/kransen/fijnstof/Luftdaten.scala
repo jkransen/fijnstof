@@ -32,7 +32,7 @@ class Luftdaten private (luftdatenId: Option[String]) extends MeasurementTarget 
       _        <- if (response.isSuccess) {
                     IO(log.debug(s"Luftdaten succeeded: ${response.body}"))
                   } else {
-                    IO(log.error("Luftdaten failed: ${response.statusText}"))
+                    IO(log.error(s"Luftdaten failed: ${response.statusText}"))
                   }
     } yield ()
   }
