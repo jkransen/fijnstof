@@ -1,4 +1,5 @@
 #!/bin/bash
+# Uploads and installs debian package on a raspberry pi
 PI=fijnstof
 if [ $# -gt 0 ]; then
   PI=$1

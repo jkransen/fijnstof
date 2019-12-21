@@ -163,13 +163,17 @@ Note the difference with the regular command to run the software tests
 Domoticz is a system to automate your home. It supports a variety of protocols and devices, allowing you to control your home and respond to sensor values. 
 Domoticz also keeps track of historic readings, and presents them in diagrams. We can send our particulate measurements to Domoticz to track the trends over time.
 
+Instead of installing Domoticz, you can run one in Docker
+
+    docker-compose up domoticz
+
 In Domoticz -> Settings -> Hardware, add new Dummy hardware
 
 - For the SDS011
   - On the Dummy hardware, create 2 virtual sensors, `PM2.5` and `PM10`. 
   - Sensor type: _Custom sensor_. Enter (copy/paste) `µg/m³` for axis label. 
 - For the MH-Z19
-  - On the Dummy hardware, create 1 virtual sensor, `CO2`. 
+  - On the Dummy hardware, create 1 virtual sensor, `CO₂`. 
   - Sensor type: _Air quality_
 
 Look up the assigned _IDX_ values under _Devices_ (order by IDX descending), and set them in the [configuration file](Configuration.md).

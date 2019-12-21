@@ -1,0 +1,18 @@
+version: '2'
+services:
+  fijnstof:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - aap
+    depends_on:
+      - domoticz
+
+  domoticz:
+    # image: "cgatay/domoticz:master"
+    image: "linuxserver/domoticz:latest"
+    ports:
+      - 8181:8080
+    expose:
+      - 8181
