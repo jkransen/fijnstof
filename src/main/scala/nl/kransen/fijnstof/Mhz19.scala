@@ -45,6 +45,8 @@ object Mhz19 {
 
 object Mhz19StateMachine {
 
+  import scala.language.higherKinds
+  
   private val log = LoggerFactory.getLogger("MH-Z19")
 
   def collectMeasurements[F[_]](): Pipe[F, Int, CO2Measurement] = {

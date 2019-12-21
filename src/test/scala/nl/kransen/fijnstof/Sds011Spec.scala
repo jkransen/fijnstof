@@ -1,14 +1,20 @@
 package nl.kransen.fijnstof
 
 import java.io.{ByteArrayInputStream, InputStream}
+import java.util.concurrent.Executors
 
+import cats.effect.{ContextShift, IO}
 import javax.xml.bind.DatatypeConverter
 import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+
+  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+  implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
   "An Sds011 actor" must {
 
@@ -19,7 +25,9 @@ class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val reading10 = 4 * 256 + 3
       val id = 6 * 256 + 5
 
-//      val expectedMeasurement = (Pm25Measurement(id, reading25), Pm10Measurement(id, reading10))
+      val expectedMeasurement = SdsMeasurement(id, reading25, reading10)
+      val actualMeasurement = Sds011.apply(new TestSdsSerialPort, 1).take(1).compile.lastOrError.unsafeRunSync()
+      actualMeasurement shouldEqual expectedMeasurement
     }
 
     "skip 1 measurement on Checksum error" in {

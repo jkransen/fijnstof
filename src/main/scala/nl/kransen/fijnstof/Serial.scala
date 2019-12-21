@@ -60,9 +60,14 @@ class TestMhzSerialPort extends SerialPortAdapter {
   private val expectTask = new Runnable {
     def run(): Unit = {
       while (true) {
-        val nextByte = is.read()
-        if (nextByte == 0x79) {
-          validPayload.foreach(posOut.write)
+        try {
+          val nextByte = is.read()
+          if (nextByte == 0x79) {
+            validPayload.foreach(posOut.write)
+          }
+        } catch {
+          case _: IOException =>
+            Thread.currentThread().interrupt()
         }
       }
     }
