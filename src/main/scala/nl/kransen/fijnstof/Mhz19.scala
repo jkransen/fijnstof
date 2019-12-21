@@ -93,13 +93,13 @@ object Mhz19StateMachine {
 
   case object CO2High extends Mhz19State {
     def nextState(nextByte: Int): Mhz19State = {
-      CO2Low(nextByte)
+      CO2Low(nextByte * 256)
     }
   }
 
   case class CO2Low(co2Value: Int) extends Mhz19State {
     def nextState(nextByte: Int): Mhz19State = {
-      Ignore1(co2Value * 256 + nextByte, co2Value + nextByte)
+      Ignore1(co2Value + nextByte, co2Value + nextByte)
     }
   }
 
@@ -132,7 +132,7 @@ object Mhz19StateMachine {
       if (nextByte == (checksum & 0xff)) {
         CompleteMeasurement(CO2Measurement(co2Value))
       } else {
-        log.error(s"Checksum mismatch, expected=$checksum actual=$nextByte")
+        log.error(s"Checksum mismatch, expected=${checksum & 0xff} actual=$nextByte")
         Init
       }
     }

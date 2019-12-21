@@ -1,6 +1,6 @@
 package nl.kransen.fijnstof
 
-import java.io.{IOException, InputStream, PipedInputStream, PipedOutputStream}
+import java.io.{IOException, InputStream, OutputStream, PipedInputStream, PipedOutputStream}
 
 import cats.effect.IO
 import purejavacomm.{CommPortIdentifier, SerialPort, SerialPortEventListener}
@@ -10,8 +10,10 @@ import scala.collection.JavaConverters._
 object Serial {
 
   def findPort(portName: String): IO[SerialPort] = {
-    if ("TEST".equals(portName)) {
-      IO(new TestSerialPort())
+    if ("TEST_SDS011".equals(portName)) {
+      IO(new TestSdsSerialPort())
+    } else if ("TEST_MHZ19".equals(portName)) {
+      IO(new TestMhzSerialPort())
     } else {
       for {
         ports <- listPorts
@@ -30,22 +32,55 @@ object Serial {
   def listPorts: IO[List[CommPortIdentifier]] = IO(CommPortIdentifier.getPortIdentifiers.asScala.toList)
 }
 
-class TestSerialPort extends SerialPort {
-
+class TestSdsSerialPort extends SerialPortAdapter {
   import java.util.concurrent._
 
-  val ex = new ScheduledThreadPoolExecutor(1)
+  private val ex = new ScheduledThreadPoolExecutor(1)
 
   override def getInputStream: InputStream = {
-    //                                    aa   c0 01 02 03 04 05 06  15   ab
-    val validPayload: Array[Int] = Array(170, 192, 1, 2, 3, 4, 5, 6, 21, 171)
+    val validPayload: Array[Int] = Array(0xaa, 0xc0, 1, 2, 3, 4, 5, 6, 21, 0xab)
     val pos = new PipedOutputStream()
     val task = new Runnable {
       def run(): Unit = validPayload.foreach(pos.write)
     }
-    val f = ex.scheduleAtFixedRate(task, 0, 1, TimeUnit.SECONDS)
+    ex.scheduleAtFixedRate(task, 0, 1, TimeUnit.SECONDS)
     new PipedInputStream(pos)
   }
+}
+
+class TestMhzSerialPort extends SerialPortAdapter {
+  import java.util.concurrent._
+
+  private val posIn = new PipedOutputStream()
+  private val posOut = new PipedOutputStream()
+
+  private val is = new PipedInputStream(posIn)
+  private val validPayload: Array[Int] = Array(0xff, 0x86, 2, 3, 0, 0, 0, 0, 3, 0xab)
+
+  private val expectTask = new Runnable {
+    def run(): Unit = {
+      while (true) {
+        val nextByte = is.read()
+        if (nextByte == 0x79) {
+          validPayload.foreach(posOut.write)
+        }
+      }
+    }
+  }
+
+  private val ex = Executors.newSingleThreadExecutor()
+  ex.execute(expectTask)
+
+  override def getOutputStream: OutputStream = posIn
+
+  override def getInputStream: InputStream = new PipedInputStream(posOut)
+}
+
+class SerialPortAdapter extends SerialPort {
+
+  def getInputStream: InputStream = ???
+
+  def getOutputStream: OutputStream = ???
 
   def addEventListener(listener: SerialPortEventListener) = ???
 
@@ -118,8 +153,6 @@ class TestSerialPort extends SerialPort {
   def getInputBufferSize = ???
 
   def getOutputBufferSize = ???
-
-  def getOutputStream = ???
 
   def getReceiveFramingByte = ???
 

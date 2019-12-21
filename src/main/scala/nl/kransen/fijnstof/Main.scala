@@ -63,8 +63,8 @@ object Main extends IOApp {
     ).collect { case Some(target) => target }
 
     val infiniteSource: Stream[IO, Measurement] = for {
-      port   <- Stream.eval(Serial.findPort(uartDevice))
-      source <- getSource(port)
+      port     <- Stream.eval(Serial.findPort(uartDevice))
+      source   <- getSource(port)
     } yield source
 
     val source =  if (isTest) infiniteSource.take(1) else infiniteSource
