@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "org.typelevel"                %% "cats-core"                     % "2.0.0",
   "com.softwaremill.sttp.client" %% "core"                          % sttpVersion,
   "com.softwaremill.sttp.client" %% "circe"                         % sttpVersion,
-  "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2" % sttpVersion,
+//  "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2" % sttpVersion,
   "com.github.purejavacomm"       % "purejavacomm"                  % "1.0.1.RELEASE",
   "org.slf4j"                     % "slf4j-log4j12"                 % "1.7.25",
   "com.typesafe"                  % "config"                        % "1.3.2",
