@@ -1,18 +1,19 @@
 # Configuration
 
-Below is a typical configuration for a setup with two sensors. It outputs to the same Domoticz instance, each on their own virtual sensor Idx:
+Below is a typical configuration for a setup with two sensors. It outputs to the same Domoticz instance, 
+each on their own virtual sensor Idx:
 
     devices = [
       {
         device = ttyUSB0
         type = SDS011
-        interval = 12
+        interval = 90
     
         domoticz {
-          host = 192.168.178.30
-          port = 8080
-          pm25Idx = 296
-          pm10Idx = 297
+          host = domoticz.local
+          port = 8181
+          pm25Idx = 1
+          pm10Idx = 2
         }
     
         luftdaten {
@@ -24,18 +25,19 @@ Below is a typical configuration for a setup with two sensors. It outputs to the
         type = MHZ19
     
         domoticz {
-          host = 192.168.178.30
-          port = 8080
-          co2Idx = 308
+          host = domoticz.local
+          port = 8181
+          co2Idx = 3
         }
       }
     ]
     
 ## device
 
-On Linux, serial devices on USB are typically named `ttyUSB0`, `ttyUSB1`. 
-Raspberry Pi with Raspbian gets a device `ttyAMA0`. 
-When connecting your sensor to the GPIO header's Rx/Tx pins ([pins 10 and 8 respectively](https://pinout.xyz/)), this is the device you need to use.
+On Linux, serial devices on USB are typically named `ttyUSB0`, `ttyUSB1`. On Raspberry Pi, 
+when connecting your sensor to the GPIO header's Rx/Tx pins ([pins 10 and 8 respectively](https://pinout.xyz/)), 
+you'll need to use device `ttyAMA0`. This is the device you need to select. Also, connect ground (GND) and 
++3.3V connectors, 
 
 On Mac, the USB adapters that come with the SDS011 / SDS021 sensors need an additional driver installed. 
 [After installation and reboot](https://kig.re/2014/12/31/how-to-use-arduino-nano-mini-pro-with-CH340G-on-mac-osx-yosemite.html), you can hopefully
@@ -50,7 +52,7 @@ This should be `SDS011` for either _SDS011_ or _SDS021_, or `MHZ19` for _MH-Z19_
 
 ## interval
 
-The amount of seconds to aggregate measurements and send as one. The average of the values is taken. 
+The amount of seconds to aggregate measurements and send as one. The average of the collected measurements is taken. 
 Time interval is best effort, don't count on precision.
 
 ## domoticz

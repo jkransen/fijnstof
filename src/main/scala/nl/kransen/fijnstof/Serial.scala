@@ -76,6 +76,16 @@ class TestMhzSerialPort extends SerialPortAdapter {
   override def getInputStream: InputStream = new PipedInputStream(posOut)
 }
 
+class LiteralSerialPort(literalOutput: String) extends SerialPortAdapter {
+
+  override def getInputStream: InputStream = {
+    val pos = new PipedOutputStream()
+    val pis = new PipedInputStream(pos)
+    literalOutput.split("\\s").foreach(s => pos.write(Integer.parseInt(s, 16)))
+    pis
+  }
+}
+
 class SerialPortAdapter extends SerialPort {
 
   def getInputStream: InputStream = ???
