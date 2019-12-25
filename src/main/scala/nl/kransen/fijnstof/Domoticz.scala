@@ -8,7 +8,7 @@ import sttp.client._
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import nl.kransen.fijnstof.Main.AppTypes.{Measurement, MeasurementTarget}
-import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
+import nl.kransen.fijnstof.Sds011.SdsMeasurement
 import org.slf4j.LoggerFactory
 
 class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], maybePm10Idx: Option[String], maybeCo2Idx: Option[String]) extends MeasurementTarget {

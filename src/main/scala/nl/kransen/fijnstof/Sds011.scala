@@ -2,12 +2,20 @@ package nl.kransen.fijnstof
 
 import cats.effect._
 import nl.kransen.fijnstof.Main.AppTypes.Measurement
-import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
 import purejavacomm.SerialPort
 import fs2._
+import nl.kransen.fijnstof.Sds011.SdsMeasurement
 import org.slf4j.LoggerFactory
 
 object Sds011 {
+
+  case class SdsMeasurement(id: Int, pm25: Int, pm10: Int) extends Measurement {
+    val pm25str = s"${pm25 / 10}.${pm25 % 10}"
+    val pm10str = s"${pm10 / 10}.${pm10 % 10}"
+
+    override def toString: String =
+      s"SDS011 id=$id pm2.5=$pm25str pm10=$pm10str"
+  }
 
   def apply(sds: SerialPort, interval: Int)(implicit cs: ContextShift[IO]): Stream[IO, SdsMeasurement] =
     for {
@@ -15,7 +23,14 @@ object Sds011 {
        stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
         .map(_.toInt & 0xff)
         .through(SdsStateMachine.collectMeasurements)
+           .chunkN(interval, allowFewer = true)
+           .map(ch => Sds011.average(ch.toVector))
     } yield stream
+
+  def average(ms: Iterable[SdsMeasurement]): SdsMeasurement = {
+    val (pm25Sum, pm10Sum) = ms.foldRight((0, 0))((nxt, sum) => (nxt.pm25 + sum._1, nxt.pm10 + sum._2))
+    SdsMeasurement(ms.head.id, pm25Sum / ms.size, pm10Sum / ms.size)
+  }
 }
 
 object SdsStateMachine {
@@ -40,14 +55,6 @@ object SdsStateMachine {
       }
 
     go(Init)(_).stream
-  }
-
-  case class SdsMeasurement(id: Int, pm25: Int, pm10: Int) extends Measurement {
-    val pm25str = s"${pm25 / 10}.${pm25 % 10}"
-    val pm10str = s"${pm10 / 10}.${pm10 % 10}"
-
-    override def toString: String =
-      s"Sds011 id=$id pm2.5=$pm25str pm10=$pm10str"
   }
 
   sealed trait SdsState {

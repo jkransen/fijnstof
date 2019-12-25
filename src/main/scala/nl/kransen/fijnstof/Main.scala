@@ -48,7 +48,7 @@ object Main extends IOApp {
   def runFlow(isTest: Boolean)(config: Config): IO[Unit] = {
     val uartDevice = config.getString("device")
     val sourceType = config.getString("type")
-    val interval = config.as[Option[Int]]("interval").getOrElse(90)
+    val interval = if (isTest) 1 else config.as[Option[Int]]("interval").getOrElse(90)
     log.info(s"Connecting to UART (Serial) device: $uartDevice type=$sourceType interval=$interval")
 
     def getSource(port: SerialPort): Stream[IO, Measurement] = sourceType.toLowerCase match {

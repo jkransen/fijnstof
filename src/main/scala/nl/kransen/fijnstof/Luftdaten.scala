@@ -8,7 +8,7 @@ import net.ceedubs.ficus.Ficus._
 import nl.kransen.fijnstof.Luftdaten.toJson
 import nl.kransen.fijnstof.Main.AppTypes
 import nl.kransen.fijnstof.Main.AppTypes.MeasurementTarget
-import nl.kransen.fijnstof.SdsStateMachine.SdsMeasurement
+import nl.kransen.fijnstof.Sds011.SdsMeasurement
 import org.slf4j.LoggerFactory
 import sttp.client._
 
