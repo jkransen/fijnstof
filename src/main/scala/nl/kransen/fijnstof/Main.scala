@@ -85,7 +85,7 @@ object Main extends IOApp {
       for {
         _       <- IO(log.info(s"Starting fijnstof, test mode: $isTest, machine id: $machineId"))
         configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
-        _       <- configs.foldMap(runFlow(isTest))
+        _       <- configs.parTraverse(runFlow(isTest))
       } yield ExitCode.Success
     }
   }
