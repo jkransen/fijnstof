@@ -44,7 +44,7 @@ class Domoticz private (host: String, port: Int, maybePm25Idx: Option[String], m
     val response = for {
       co2Idx   <- OptionT.fromOption[IO](maybeCo2Idx)
       _        <- OptionT.liftF(IO(log.debug("CO₂ Measurement: " + co2Measurement)))
-      response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${co2Idx}&nvalue=&svalue=${co2Measurement.str}").send()))
+      response <- OptionT.liftF(IO(basicRequest.post(uri"http://$host:$port/json.htm?type=command&param=udevice&idx=${co2Idx}&nvalue=${co2Measurement.str}").send()))
       _        <- OptionT.liftF(IO(log.debug("Response: " + response.statusText)))
     } yield ()
     response.getOrElseF(IO(log.error("Domoticz CO₂ failed")))
