@@ -7,27 +7,32 @@ import cats._
 import cats.effect._
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
-import fs2.{Pipe, Stream}
+import fs2.Stream
 import net.ceedubs.ficus.Ficus._
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
+import zio.blocking.Blocking
+import zio.console.Console
+import zio.{App, RIO, UIO, ZIO, console}
 
 import scala.util.Try
 import scala.concurrent.ExecutionContext
 import scala.io.Source.fromFile
 import scala.collection.JavaConverters._
 
-object Main extends IOApp {
+object Main extends App {
 
   import AppTypes._
 
   object AppTypes {
-    trait Measurement
-
+    type AppEnv = Blocking with Console
+    type AppTask[A] = RIO[AppEnv, A]
     type MeasurementSource
 
+    trait Measurement
+
     trait MeasurementTarget {
-      def save(measurement: Measurement): IO[Unit]
+      def save(measurement: Measurement): AppTask[Unit]
     }
   }
 
@@ -45,16 +50,16 @@ object Main extends IOApp {
     } yield "fijnstof-" + firstMatch.group(1)
   }
 
-  def runFlow(isTest: Boolean)(config: Config): IO[Unit] = {
+  def runStream(isTest: Boolean)(config: Config): AppTask[Unit] = {
     val uartDevice = config.getString("device")
     val sourceType = config.getString("type")
     val interval = if (isTest) 1 else config.as[Option[Int]]("interval").getOrElse(90)
     log.info(s"Connecting to UART (Serial) device: $uartDevice type=$sourceType interval=$interval")
 
-    def getSource(port: SerialPort): Stream[IO, Measurement] = sourceType.toLowerCase match {
+    def getSource(port: SerialPort): Stream[AppTask, Measurement] = sourceType.toLowerCase match {
       case "sds011" => Sds011(port, interval)
       case "mhz19" => Mhz19(port, interval)
-      case _ => Stream.raiseError[IO](new IOException(s"Source type $sourceType unknown"))
+      case _ => Stream.raiseError[AppTask](new IOException(s"Source type $sourceType unknown"))
     }
 
     val targets: Seq[MeasurementTarget] = Seq(
@@ -62,7 +67,7 @@ object Main extends IOApp {
       config.as[Option[Config]]("luftdaten").map(config => Luftdaten(config))
     ).collect { case Some(target) => target }
 
-    val infiniteSource: Stream[IO, Measurement] = for {
+    val infiniteSource: Stream[AppTask, Measurement] = for {
       port     <- Stream.eval(Serial.findPort(uartDevice))
       source   <- getSource(port)
     } yield source
@@ -72,21 +77,22 @@ object Main extends IOApp {
         .compile.drain
   }
 
-  override def run(args: List[String]): IO[ExitCode] = {
+  override def run(args: List[String]): ZIO[AppEnv, Nothing, Int] = {
     if (args.contains("list")) {
       for {
-        _       <- IO(log.info(s"Starting fijnstof, listing serial ports, machine id: $machineId"))
-        _       <- IO(log.debug("Listing serial ports"))
+        _       <- console.putStrLn("Starting")
+        _       <- console.putStrLn(s"Starting fijnstof, listing serial ports, machine id: $machineId")
         ports   <- Serial.listPorts
-        _       <- ports.foldMap(port => IO(log.info(s"Serial port: ${port.getName}")))
-      } yield ExitCode.Success
+        _       <- ports.foldMap(port => console.putStrLn(s"Serial port: ${port.getName}")))
+      } yield 0
     } else {
       val isTest = args.contains("test")
       for {
-        _       <- IO(log.info(s"Starting fijnstof, test mode: $isTest, machine id: $machineId"))
-        configs <- IO(ConfigFactory.load().getConfigList("devices").asScala.toList)
-        _       <- configs.parTraverse(runFlow(isTest))
-      } yield ExitCode.Success
+        _       <- console.putStrLn("Starting")
+        _       <- console.putStrLn(s"Starting fijnstof, test mode: $isTest, machine id: $machineId")
+        configs <- UIO(ConfigFactory.load().getConfigList("devices").asScala.toList)
+        _       <- configs.parTraverse(runStream(isTest))
+      } yield 0
     }
   }
 }

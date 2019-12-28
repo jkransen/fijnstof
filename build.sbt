@@ -19,6 +19,7 @@ val circeVersion = "0.12.3"
 libraryDependencies ++= Seq(
   "co.fs2"                       %% "fs2-core"                      % fs2Version,
   "co.fs2"                       %% "fs2-io"                        % fs2Version,
+  "dev.zio"                      %% "zio-interop-cats"              % "2.0.0.0-RC10",
   "org.typelevel"                %% "cats-effect"                   % "2.0.0",
   "org.typelevel"                %% "cats-core"                     % "2.0.0",
   "com.softwaremill.sttp.client" %% "core"                          % sttpVersion,

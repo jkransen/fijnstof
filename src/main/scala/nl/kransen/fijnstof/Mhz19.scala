@@ -5,8 +5,10 @@ import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 import cats.effect.{Blocker, ContextShift, IO}
 import fs2.{Pipe, Pull, Stream, io}
 import nl.kransen.fijnstof.Main.AppTypes
+import nl.kransen.fijnstof.Main.AppTypes.AppTask
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
+import zio.ZIO
 
 import scala.concurrent.ExecutionContext
 
@@ -23,7 +25,7 @@ object CO2Measurement {
 
 object Mhz19 {
 
-  def apply(mhz19: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor, cs: ContextShift[IO]): Stream[IO, CO2Measurement] = {
+  def apply(mhz19: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor, cs: ContextShift[AppTask]): Stream[AppTask, CO2Measurement] = {
 
     val sendReadCommand: Runnable = new Runnable {
       private val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79)
@@ -36,7 +38,7 @@ object Mhz19 {
 
     for {
       blocker <- Stream.resource(Blocker[IO])
-      stream <- io.readInputStream(IO(mhz19.getInputStream), 1, blocker)
+      stream <- io.readInputStream(ZIO(mhz19.getInputStream), 1, blocker)
         .map(_.toInt & 0xff)
         .through(Mhz19StateMachine.collectMeasurements())
     } yield stream

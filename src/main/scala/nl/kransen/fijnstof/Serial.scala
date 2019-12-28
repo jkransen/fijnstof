@@ -2,22 +2,23 @@ package nl.kransen.fijnstof
 
 import java.io.{IOException, InputStream, OutputStream, PipedInputStream, PipedOutputStream}
 
-import cats.effect.IO
+import nl.kransen.fijnstof.Main.AppTypes.AppTask
 import purejavacomm.{CommPortIdentifier, SerialPort, SerialPortEventListener}
+import zio.UIO
 
 import scala.collection.JavaConverters._
 
 object Serial {
 
-  def findPort(portName: String): IO[SerialPort] = {
+  def findPort(portName: String): AppTask[SerialPort] = {
     if ("TEST_SDS011".equals(portName)) {
-      IO(new TestSdsSerialPort())
+      UIO(new TestSdsSerialPort())
     } else if ("TEST_MHZ19".equals(portName)) {
-      IO(new TestMhzSerialPort())
+      UIO(new TestMhzSerialPort())
     } else {
       for {
         ports <- listPorts
-        port  <- IO(ports.find(_.getName.equalsIgnoreCase(portName))
+        port  <- UIO(ports.find(_.getName.equalsIgnoreCase(portName))
                    .getOrElse(throw new IOException(s"Port not found: $portName")))
       } yield openPort(port)
     }
@@ -29,7 +30,7 @@ object Serial {
     port
   }
 
-  def listPorts: IO[List[CommPortIdentifier]] = IO(CommPortIdentifier.getPortIdentifiers.asScala.toList)
+  def listPorts: AppTask[List[CommPortIdentifier]] = UIO(CommPortIdentifier.getPortIdentifiers.asScala.toList)
 }
 
 class TestSdsSerialPort extends SerialPortAdapter {

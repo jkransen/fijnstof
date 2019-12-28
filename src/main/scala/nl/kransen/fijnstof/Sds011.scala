@@ -1,7 +1,7 @@
 package nl.kransen.fijnstof
 
 import cats.effect._
-import nl.kransen.fijnstof.Main.AppTypes.Measurement
+import nl.kransen.fijnstof.Main.AppTypes.{AppTask, Measurement}
 import purejavacomm.SerialPort
 import fs2._
 import nl.kransen.fijnstof.Sds011.SdsMeasurement
@@ -17,9 +17,9 @@ object Sds011 {
       s"SDS011 id=$id pm2.5=$pm25str pm10=$pm10str"
   }
 
-  def apply(sds: SerialPort, interval: Int)(implicit cs: ContextShift[IO]): Stream[IO, SdsMeasurement] =
+  def apply(sds: SerialPort, interval: Int)(implicit cs: ContextShift[AppTask]): Stream[AppTask, SdsMeasurement] =
     for {
-       blocker <- Stream.resource(Blocker[IO])
+       blocker <- Stream.resource(Blocker[AppTask])
        stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
         .map(_.toInt & 0xff)
         .through(SdsStateMachine.collectMeasurements)
@@ -37,9 +37,9 @@ object SdsStateMachine {
 
   private val log = LoggerFactory.getLogger("SDS011")
 
-  val collectMeasurements: Pipe[IO, Int, SdsMeasurement] = {
+  val collectMeasurements: Pipe[AppTask, Int, SdsMeasurement] = {
 
-    def go(state: SdsState): Stream[IO, Int] => Pull[IO, SdsMeasurement, Unit] =
+    def go(state: SdsState): Stream[AppTask, Int] => Pull[AppTask, SdsMeasurement, Unit] =
       _.pull.uncons1.flatMap {
         case Some((nextByte: Int, tail)) =>
           val nextState = state.nextState(nextByte)
