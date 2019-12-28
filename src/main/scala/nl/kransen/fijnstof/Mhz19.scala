@@ -2,17 +2,15 @@ package nl.kransen.fijnstof
 
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
-import cats.effect.{Blocker, ContextShift, IO}
+import cats.effect.Blocker
 import fs2.{Pipe, Pull, Stream, io}
-import nl.kransen.fijnstof.Main.AppTypes
-import nl.kransen.fijnstof.Main.AppTypes.AppTask
+import nl.kransen.fijnstof.Main.AppTypes.{AppEnv, AppTask, Measurement}
 import org.slf4j.LoggerFactory
 import purejavacomm.SerialPort
 import zio.ZIO
+import zio.interop.catz._
 
-import scala.concurrent.ExecutionContext
-
-case class CO2Measurement(ppm: Int) extends AppTypes.Measurement {
+case class CO2Measurement(ppm: Int) extends Measurement {
   val str: String = ppm.toString
 }
 
@@ -25,7 +23,7 @@ object CO2Measurement {
 
 object Mhz19 {
 
-  def apply(mhz19: SerialPort, interval: Int)(implicit ec: ExecutionContext, ex: ScheduledThreadPoolExecutor, cs: ContextShift[AppTask]): Stream[AppTask, CO2Measurement] = {
+  def apply(mhz19: SerialPort, interval: Int)(implicit ex: ScheduledThreadPoolExecutor): Stream[AppTask, CO2Measurement] = {
 
     val sendReadCommand: Runnable = new Runnable {
       private val readCommand = Array(0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79)
@@ -36,12 +34,14 @@ object Mhz19 {
     }
     ex.scheduleAtFixedRate(sendReadCommand, 0, 4, TimeUnit.SECONDS)
 
-    for {
-      blocker <- Stream.resource(Blocker[IO])
-      stream <- io.readInputStream(ZIO(mhz19.getInputStream), 1, blocker)
-        .map(_.toInt & 0xff)
-        .through(Mhz19StateMachine.collectMeasurements())
-    } yield stream
+    Stream.eval(ZIO.runtime[AppEnv]).flatMap { implicit rts =>
+      for {
+        blocker <- Stream.eval(rts.environment.blocking.blockingExecutor)
+        stream <- io.readInputStream(ZIO(mhz19.getInputStream), 1, Blocker.liftExecutionContext(blocker.asEC))
+          .map(_.toInt & 0xff)
+          .through(Mhz19StateMachine.collectMeasurements())
+      } yield stream
+    }
   }
 }
 
@@ -51,9 +51,9 @@ object Mhz19StateMachine {
   
   private val log = LoggerFactory.getLogger("MH-Z19")
 
-  def collectMeasurements[F[_]](): Pipe[F, Int, CO2Measurement] = {
+  def collectMeasurements(): Pipe[AppTask, Int, CO2Measurement] = {
 
-    def go(state: Mhz19State): Stream[F, Int] => Pull[F, CO2Measurement, Unit] =
+    def go(state: Mhz19State): Stream[AppTask, Int] => Pull[AppTask, CO2Measurement, Unit] =
       _.pull.uncons1.flatMap {
         case Some((nextByte: Int, tail)) =>
           val nextState = state.nextState(nextByte)

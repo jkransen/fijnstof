@@ -4,7 +4,7 @@ import java.io.{IOException, InputStream, OutputStream, PipedInputStream, PipedO
 
 import nl.kransen.fijnstof.Main.AppTypes.AppTask
 import purejavacomm.{CommPortIdentifier, SerialPort, SerialPortEventListener}
-import zio.UIO
+import zio.{RIO, UIO}
 
 import scala.collection.JavaConverters._
 
@@ -12,13 +12,13 @@ object Serial {
 
   def findPort(portName: String): AppTask[SerialPort] = {
     if ("TEST_SDS011".equals(portName)) {
-      UIO(new TestSdsSerialPort())
+      RIO(new TestSdsSerialPort())
     } else if ("TEST_MHZ19".equals(portName)) {
-      UIO(new TestMhzSerialPort())
+      RIO(new TestMhzSerialPort())
     } else {
       for {
         ports <- listPorts
-        port  <- UIO(ports.find(_.getName.equalsIgnoreCase(portName))
+        port  <- RIO(ports.find(_.getName.equalsIgnoreCase(portName))
                    .getOrElse(throw new IOException(s"Port not found: $portName")))
       } yield openPort(port)
     }

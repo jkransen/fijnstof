@@ -3,8 +3,6 @@ package nl.kransen.fijnstof
 import java.io.IOException
 import java.util.concurrent.{Executors, ScheduledThreadPoolExecutor}
 
-import cats._
-import cats.effect._
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import fs2.Stream
@@ -14,6 +12,7 @@ import purejavacomm.SerialPort
 import zio.blocking.Blocking
 import zio.console.Console
 import zio.{App, RIO, UIO, ZIO, console}
+import zio.interop.catz._
 
 import scala.util.Try
 import scala.concurrent.ExecutionContext
@@ -40,7 +39,6 @@ object Main extends App {
 
   implicit val ex: ScheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1)
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
-  implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
   lazy val machineId: Option[String] = {
     val serialRegex = "Serial\\s*\\:\\s*0*([^0][0-9a-fA-F]+)".r
@@ -59,7 +57,7 @@ object Main extends App {
     def getSource(port: SerialPort): Stream[AppTask, Measurement] = sourceType.toLowerCase match {
       case "sds011" => Sds011(port, interval)
       case "mhz19" => Mhz19(port, interval)
-      case _ => Stream.raiseError[AppTask](new IOException(s"Source type $sourceType unknown"))
+//      case _ => Stream.raiseError[AppTask](new IOException(s"Source type $sourceType unknown"))
     }
 
     val targets: Seq[MeasurementTarget] = Seq(
@@ -73,26 +71,35 @@ object Main extends App {
     } yield source
 
     val source =  if (isTest) infiniteSource.take(1) else infiniteSource
-    source.evalMap(meas => targets.toList.foldMap(t => t.save(meas)))
+    source.evalMap(meas => targets.toList.parTraverse(t => t.save(meas)))
         .compile.drain
   }
 
+  val listFlow: AppTask[Int] = {
+    for {
+      _       <- console.putStrLn("Starting")
+      _       <- console.putStrLn(s"Starting fijnstof, listing serial ports, machine id: $machineId")
+      ports   <- Serial.listPorts
+      _       <- ports.parTraverse(port => console.putStrLn(s"Serial port: ${port.getName}"))
+    } yield 0
+  }
+
+  def runFlow(isTest: Boolean): AppTask[Int] = {
+    for {
+      _       <- console.putStrLn("Starting")
+      _       <- console.putStrLn(s"Starting fijnstof, test mode: $isTest, machine id: $machineId")
+      configs <- ZIO(ConfigFactory.load().getConfigList("devices").asScala.toList)
+      _       <- configs.parTraverse(runStream(isTest))
+    } yield 0
+  }
+
   override def run(args: List[String]): ZIO[AppEnv, Nothing, Int] = {
-    if (args.contains("list")) {
-      for {
-        _       <- console.putStrLn("Starting")
-        _       <- console.putStrLn(s"Starting fijnstof, listing serial ports, machine id: $machineId")
-        ports   <- Serial.listPorts
-        _       <- ports.foldMap(port => console.putStrLn(s"Serial port: ${port.getName}")))
-      } yield 0
+    val task = if (args.contains("list")) {
+      listFlow
     } else {
       val isTest = args.contains("test")
-      for {
-        _       <- console.putStrLn("Starting")
-        _       <- console.putStrLn(s"Starting fijnstof, test mode: $isTest, machine id: $machineId")
-        configs <- UIO(ConfigFactory.load().getConfigList("devices").asScala.toList)
-        _       <- configs.parTraverse(runStream(isTest))
-      } yield 0
+      runFlow(isTest)
     }
+    task.fold(_ => 1, _ => 0)
   }
 }

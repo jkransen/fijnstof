@@ -1,11 +1,14 @@
 package nl.kransen.fijnstof
 
-import cats.effect._
-import nl.kransen.fijnstof.Main.AppTypes.{AppTask, Measurement}
+import cats.effect.Blocker
+import zio.blocking.Blocking
+import nl.kransen.fijnstof.Main.AppTypes.{AppEnv, AppTask, Measurement}
 import purejavacomm.SerialPort
 import fs2._
 import nl.kransen.fijnstof.Sds011.SdsMeasurement
 import org.slf4j.LoggerFactory
+import zio.ZIO
+import zio.interop.catz._
 
 object Sds011 {
 
@@ -17,15 +20,17 @@ object Sds011 {
       s"SDS011 id=$id pm2.5=$pm25str pm10=$pm10str"
   }
 
-  def apply(sds: SerialPort, interval: Int)(implicit cs: ContextShift[AppTask]): Stream[AppTask, SdsMeasurement] =
-    for {
-       blocker <- Stream.resource(Blocker[AppTask])
-       stream <- io.readInputStream(IO(sds.getInputStream), 1, blocker)
-        .map(_.toInt & 0xff)
-        .through(SdsStateMachine.collectMeasurements)
-           .chunkN(interval, allowFewer = true)
-           .map(ch => Sds011.average(ch.toVector))
-    } yield stream
+  def apply(sds: SerialPort, interval: Int): Stream[AppTask, SdsMeasurement] =
+    Stream.eval(ZIO.runtime[AppEnv]).flatMap { implicit rts =>
+      for {
+        blocker <- Stream.eval(rts.environment.blocking.blockingExecutor)
+        stream <- io.readInputStream(ZIO(sds.getInputStream), 1, Blocker.liftExecutionContext(blocker.asEC))
+          .map(_.toInt & 0xff)
+          .through(SdsStateMachine.collectMeasurements)
+          .chunkN(interval, allowFewer = true)
+          .map(ch => average(ch.toVector))
+      } yield stream
+    }
 
   def average(ms: Iterable[SdsMeasurement]): SdsMeasurement = {
     val (pm25Sum, pm10Sum) = ms.foldRight((0, 0))((nxt, sum) => (nxt.pm25 + sum._1, nxt.pm10 + sum._2))

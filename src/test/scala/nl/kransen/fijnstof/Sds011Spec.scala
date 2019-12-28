@@ -1,16 +1,18 @@
 package nl.kransen.fijnstof
 
-import cats.effect.{ContextShift, IO}
 import nl.kransen.fijnstof.Sds011.SdsMeasurement
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import zio.DefaultRuntime
+import zio.interop.catz._
 
 class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val cs: ContextShift[IO] = Main.cs
+  val runtime = new DefaultRuntime {}
 
   "Sds011" must {
 
     "send precisely one measurement" in {
+
       val validPayload = "aa c0 01 02 03 04 05 06 15 ab"
 
       val reading25 = 2 * 256 + 1
@@ -18,7 +20,8 @@ class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val id = 6 * 256 + 5
 
       val expectedMeasurement = SdsMeasurement(id, reading25, reading10)
-      val actualMeasurement = Sds011(new LiteralSerialPort(validPayload), 1).take(1).compile.toVector.unsafeRunSync().head
+      val stream = Sds011(new LiteralSerialPort(validPayload), 1).take(1).compile.toVector
+      val actualMeasurement = runtime.unsafeRun(stream).head
       actualMeasurement shouldEqual expectedMeasurement
     }
 
@@ -27,7 +30,8 @@ class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val validReading = "aa c0 01 00 01 00 01 00 03 ab"
 
       val expectedMeasurement = SdsMeasurement(1, 1, 1)
-      val actualMeasurement = Sds011(new LiteralSerialPort(invalidReading + validReading), 1).take(1).compile.toVector.unsafeRunSync().head
+      val stream = Sds011(new LiteralSerialPort(invalidReading + validReading), 1).take(1).compile.toVector
+      val actualMeasurement = runtime.unsafeRun(stream).head
       actualMeasurement shouldEqual expectedMeasurement
     }
 
@@ -36,7 +40,8 @@ class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val validReading = "aa c0 01 00 01 00 01 00 03 ab"
 
       val expectedMeasurement = SdsMeasurement(1, 1, 1)
-      val actualMeasurement = Sds011(new LiteralSerialPort(invalidReading + validReading), 1).take(1).compile.toVector.unsafeRunSync().head
+      val stream = Sds011(new LiteralSerialPort(invalidReading + validReading), 1).take(1).compile.toVector
+      val actualMeasurement = runtime.unsafeRun(stream).head
       actualMeasurement shouldEqual expectedMeasurement
     }
 
@@ -49,7 +54,8 @@ class Sds011Spec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val id = 6 * 256 + 5
 
       val expectedMeasurement = SdsMeasurement(id, reading25, reading10)
-      val actualMeasurement = Sds011(new LiteralSerialPort(validPayload), 1).take(1).compile.toVector.unsafeRunSync().head
+      val stream = Sds011(new LiteralSerialPort(validPayload), 1).take(1).compile.toVector
+      val actualMeasurement = runtime.unsafeRun(stream).head
       actualMeasurement shouldEqual expectedMeasurement
     }
   }
